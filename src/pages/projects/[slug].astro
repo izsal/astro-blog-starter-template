@@ -5,24 +5,20 @@ import Footer from '../../components/Footer.astro';
 import { SITE_TITLE, AUTHOR_NAME } from '../../consts';
 import { getD1Database, getProjects } from '../../lib/db';
 
-export async function getStaticPaths() {
-	return [
-		{ params: { slug: 'netflix-clone' } },
-		{ params: { slug: 'nextjs-ecommerce' } },
-		{ params: { slug: 'itokin-qc-mobile' } },
-		{ params: { slug: 'lahtube-video-platform' } },
-		{ params: { slug: 'gis-pwa-wisata' } },
-		{ params: { slug: 'e-office-run-market' } },
-		{ params: { slug: 'cloud-edge-api' } },
-		{ params: { slug: 'astro-knowledge-hub' } },
-		{ params: { slug: 'docker-homelab-infra' } },
-	];
-}
+export const prerender = false;
 
 const { slug } = Astro.params;
+if (!slug) {
+	return Astro.redirect('/404');
+}
+
 const db = getD1Database(Astro.locals);
 const projects = await getProjects(db, false);
-const project = projects.find((p) => p.slug === slug) || projects[0];
+const project = projects.find((p) => p.slug === slug);
+
+if (!project) {
+	return Astro.redirect('/404');
+}
 ---
 
 <!doctype html>
