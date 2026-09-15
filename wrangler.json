@@ -7,6 +7,12 @@
 		"directory": "./dist",
 		"binding": "ASSETS"
 	},
+	"routes": [
+		{
+			"pattern": "qblog.qwarts.my.id",
+			"custom_domain": true
+		}
+	],
 	"observability": {
 		"enabled": true
 	},
@@ -15,7 +21,7 @@
 		{
 			"binding": "my-binding",
 			"database_name": "qblog-db",
-			"database_id": "local-qblog-db"
+			"database_id": "bda4401a-4baf-48e6-9ad9-a63e253ff2a9"
 		}
 	]
 }

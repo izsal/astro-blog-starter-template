@@ -128,11 +128,12 @@ export async function GET({ params, locals }) {
 
 export function getD1Database(locals?: App.Locals): D1Database | null {
 	try {
-		if (locals && "runtime" in locals && locals.runtime?.env?.["my-binding"]) {
-			return locals.runtime.env["my-binding"];
+		if (locals && "runtime" in locals && locals.runtime?.env) {
+			const env = locals.runtime.env as Record<string, any>;
+			return env["my-binding"] || env["My_Binding"] || null;
 		}
 	} catch (err) {
-		console.warn("Could not obtain D1 database binding 'my-binding':", err);
+		console.warn("Could not obtain D1 database binding:", err);
 	}
 	return null;
 }
