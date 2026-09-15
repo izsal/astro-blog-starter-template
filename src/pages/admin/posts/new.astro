@@ -29,13 +29,22 @@ const existingPosts = rawPosts.map((p) => ({
 	<head>
 		<BaseHead
 			title={`Tulis Artikel Baru — Admin ${SITE_TITLE}`}
-			description="Editor artikel dengan real-time SEO score checker."
+			description="Editor artikel dengan real-time SEO score checker, live preview, dan autosave."
 		/>
 	</head>
 	<body class="admin-body">
 		<div class="editor-container">
 			<div class="editor-top">
-				<a href="/admin/posts" class="back-link">&larr; Batal & Kembali</a>
+				<div class="top-nav-row">
+					<a href="/admin/posts" class="back-link">&larr; Batal & Kembali ke Daftar Artikel</a>
+					<!-- Autosave Bar -->
+					<div class="autosave-badge-box">
+						<span id="autosave-time" class="autosave-status">● Draft autosaved lokal</span>
+						<button type="button" id="btn-restore-draft" class="btn-restore" style="display: none;">
+							↺ Pulihkan Draft Sebelumnya
+						</button>
+					</div>
+				</div>
 				<h1 class="page-title">Tulis Artikel Baru (D1 Database)</h1>
 			</div>
 
@@ -67,7 +76,7 @@ const existingPosts = rawPosts.map((p) => ({
 
 						<div class="form-row">
 							<div class="form-group">
-								<label for="post-category">Kategori</label>
+								<label for="post-category">Kategori Cluster</label>
 								<select id="post-category" class="input-field select-field">
 									{categories.map((c) => (
 										<option value={c.id}>{c.name}</option>
@@ -76,10 +85,49 @@ const existingPosts = rawPosts.map((p) => ({
 							</div>
 
 							<div class="form-group">
-								<label for="post-status">Status</label>
+								<label for="post-status">Status Publikasi</label>
 								<select id="post-status" class="input-field select-field">
-									<option value="PUBLISHED">PUBLISHED</option>
-									<option value="DRAFT">DRAFT</option>
+									<option value="PUBLISHED">PUBLISHED (Langsung Tayang)</option>
+									<option value="DRAFT">DRAFT (Simpan Draft)</option>
+									<option value="SCHEDULED">SCHEDULED (Jadwalkan)</option>
+								</select>
+							</div>
+						</div>
+
+						<!-- Scheduled Date Group (Shown when SCHEDULED) -->
+						<div class="form-group" id="scheduled-group" style="display: none;">
+							<label for="post-scheduled-at">Waktu Tayang Terjadwal</label>
+							<input type="datetime-local" id="post-scheduled-at" class="input-field" />
+						</div>
+
+						<!-- Featured Post Checkbox -->
+						<div class="checkbox-row">
+							<label class="checkbox-container">
+								<input type="checkbox" id="post-featured" />
+								<span class="checkbox-custom"></span>
+								<span class="checkbox-label">Tandai sebagai <strong>Featured Article</strong> (Tampil di kartu sorotan utama)</span>
+							</label>
+						</div>
+
+						<!-- SEO Focus Keyword & Search Intent (PRD Section 3) -->
+						<div class="form-row">
+							<div class="form-group">
+								<label for="post-keyword">Focus Keyword (Target Utama)</label>
+								<input
+									type="text"
+									id="post-keyword"
+									placeholder="contoh: astro cloudflare d1"
+									class="input-field"
+								/>
+							</div>
+
+							<div class="form-group">
+								<label for="post-intent">Search Intent</label>
+								<select id="post-intent" class="input-field select-field">
+									<option value="Informational">Informational (Tutorial & Konsep)</option>
+									<option value="Commercial">Commercial (Komparasi & Evaluasi)</option>
+									<option value="Transactional">Transactional (Download & Tools)</option>
+									<option value="Navigational">Navigational (Brand & Reference)</option>
 								</select>
 							</div>
 						</div>
@@ -89,22 +137,49 @@ const existingPosts = rawPosts.map((p) => ({
 							<textarea
 								id="post-excerpt"
 								rows="3"
-								placeholder="Deskripsi singkat yang memikat untuk hasil pencarian Google..."
+								placeholder="Deskripsi singkat yang memikat untuk snippet hasil pencarian Google..."
 								required
 								class="input-field"
 							></textarea>
 						</div>
 
-						<div class="form-group">
-							<label for="post-content">Konten Artikel (Markdown)</label>
+						<!-- Content Tabs: Markdown Editor vs Live Preview -->
+						<div class="content-header-row">
+							<label>Konten Artikel</label>
+							<div class="editor-tabs">
+								<button type="button" class="tab-btn active" id="tab-write">Tulis Markdown</button>
+								<button type="button" class="tab-btn" id="tab-preview">Live Preview</button>
+							</div>
+						</div>
+
+						<div id="write-container">
 							<textarea
 								id="post-content"
-								rows="14"
-								placeholder="# Tulis artikel Anda di sini menggunakan Markdown..."
+								rows="16"
+								placeholder="# Tulis artikel Anda di sini menggunakan Markdown...&#10;&#10;Gunakan heading, code block, dan tautan internal."
 								required
 								class="input-field content-textarea"
 							></textarea>
 						</div>
+
+						<div id="preview-container" class="preview-box" style="display: none;">
+							<div id="preview-content" class="preview-content"></div>
+						</div>
+
+						<!-- Advanced SEO Collapsible (Canonical & OG Image) -->
+						<details class="advanced-seo-details">
+							<summary class="advanced-seo-summary">⚙️ Pengaturan SEO Lanjutan (Canonical URL & OG Image)</summary>
+							<div class="form-row" style="margin-top: 1rem;">
+								<div class="form-group">
+									<label for="post-canonical">Canonical URL (Opsional)</label>
+									<input type="url" id="post-canonical" placeholder="https://qblog.qwarts.my.id/blog/..." class="input-field mono-field" />
+								</div>
+								<div class="form-group">
+									<label for="post-og-image">OG Image URL (Banner Share Sosial)</label>
+									<input type="text" id="post-og-image" placeholder="/blog-placeholder-1.jpg" class="input-field" />
+								</div>
+							</div>
+						</details>
 
 						<button type="submit" class="btn btn-primary submit-btn" id="save-post-btn">
 							Simpan & Publikasikan ke Cloudflare D1
@@ -114,7 +189,7 @@ const existingPosts = rawPosts.map((p) => ({
 					</form>
 				</div>
 
-				<!-- Right Column: Realtime SEO Score Checker (PRD Section 10) -->
+				<!-- Right Column: Realtime SEO Score Checker & Smart Link Engine -->
 				<div class="seo-column">
 					<div class="glass-card seo-panel">
 						<div class="seo-score-circle" id="score-circle">
@@ -122,19 +197,23 @@ const existingPosts = rawPosts.map((p) => ({
 							<span class="score-text">SEO SCORE</span>
 						</div>
 
-						<h3 class="checklist-title">Realtime SEO Checklist</h3>
+						<h3 class="checklist-title">Realtime SEO Health Checklist</h3>
 						<div class="checklist-items">
 							<div class="check-item" id="chk-title">
 								<span class="chk-icon">○</span>
-								<span>Panjang judul optimal (40-70 karakter)</span>
+								<span>Panjang judul optimal (35-75 karakter)</span>
 							</div>
 							<div class="check-item" id="chk-slug">
 								<span class="chk-icon">○</span>
 								<span>Format URL slug bersih & ringkas</span>
 							</div>
+							<div class="check-item" id="chk-keyword">
+								<span class="chk-icon">○</span>
+								<span>Focus keyword ada di Judul & Excerpt</span>
+							</div>
 							<div class="check-item" id="chk-desc">
 								<span class="chk-icon">○</span>
-								<span>Meta description memadai (80-160 karakter)</span>
+								<span>Meta description memadai (70-180 karakter)</span>
 							</div>
 							<div class="check-item" id="chk-h1">
 								<span class="chk-icon">○</span>
@@ -146,12 +225,12 @@ const existingPosts = rawPosts.map((p) => ({
 							</div>
 							<div class="check-item" id="chk-links">
 								<span class="chk-icon">○</span>
-								<span>Memiliki internal/external links</span>
+								<span>Memiliki internal link contextual</span>
 							</div>
 						</div>
 
 						<div class="seo-hints-box" id="seo-hints">
-							<strong>Saran:</strong> Mulai ketik judul dan konten untuk melihat skor SEO Anda.
+							<strong>Saran:</strong> Mulai ketik judul, focus keyword, dan konten untuk melihat skor SEO Anda.
 						</div>
 					</div>
 
@@ -186,6 +265,22 @@ const existingPosts = rawPosts.map((p) => ({
 			const contentInput = document.getElementById('post-content') as HTMLTextAreaElement | null;
 			const categorySelect = document.getElementById('post-category') as HTMLSelectElement | null;
 			const statusSelect = document.getElementById('post-status') as HTMLSelectElement | null;
+			const keywordInput = document.getElementById('post-keyword') as HTMLInputElement | null;
+			const intentSelect = document.getElementById('post-intent') as HTMLSelectElement | null;
+			const scheduledGroup = document.getElementById('scheduled-group');
+			const scheduledInput = document.getElementById('post-scheduled-at') as HTMLInputElement | null;
+			const featuredInput = document.getElementById('post-featured') as HTMLInputElement | null;
+			const canonicalInput = document.getElementById('post-canonical') as HTMLInputElement | null;
+			const ogImageInput = document.getElementById('post-og-image') as HTMLInputElement | null;
+
+			const tabWrite = document.getElementById('tab-write');
+			const tabPreview = document.getElementById('tab-preview');
+			const writeContainer = document.getElementById('write-container');
+			const previewContainer = document.getElementById('preview-container');
+			const previewContent = document.getElementById('preview-content');
+
+			const autosaveTime = document.getElementById('autosave-time');
+			const btnRestoreDraft = document.getElementById('btn-restore-draft');
 
 			const scoreVal = document.getElementById('score-val');
 			const scoreCircle = document.getElementById('score-circle');
@@ -193,10 +288,18 @@ const existingPosts = rawPosts.map((p) => ({
 
 			const chkTitle = document.getElementById('chk-title');
 			const chkSlug = document.getElementById('chk-slug');
+			const chkKeyword = document.getElementById('chk-keyword');
 			const chkDesc = document.getElementById('chk-desc');
 			const chkH1 = document.getElementById('chk-h1');
 			const chkWords = document.getElementById('chk-words');
 			const chkLinks = document.getElementById('chk-links');
+
+			// Toggle scheduled date input
+			if (statusSelect && scheduledGroup) {
+				statusSelect.addEventListener('change', () => {
+					scheduledGroup.style.display = statusSelect.value === 'SCHEDULED' ? 'block' : 'none';
+				});
+			}
 
 			// Auto slug generator from title
 			if (titleInput && slugInput) {
@@ -207,23 +310,115 @@ const existingPosts = rawPosts.map((p) => ({
 							.replace(/[^a-z0-9]+/g, '-')
 							.replace(/(^-|-$)+/g, '');
 					}
-					updateSeoScore();
+					triggerUpdate();
 				});
 
 				slugInput.addEventListener('input', () => {
 					slugInput.dataset.manual = 'true';
-					updateSeoScore();
+					triggerUpdate();
 				});
 			}
 
-			if (excerptInput) excerptInput.addEventListener('input', updateSeoScore);
-			if (contentInput) contentInput.addEventListener('input', updateSeoScore);
+			if (excerptInput) excerptInput.addEventListener('input', triggerUpdate);
+			if (contentInput) contentInput.addEventListener('input', triggerUpdate);
+			if (keywordInput) keywordInput.addEventListener('input', triggerUpdate);
+
+			function triggerUpdate() {
+				updateSeoScore();
+				scheduleAutosave();
+			}
+
+			// Tab switcher (Write vs Live Preview)
+			if (tabWrite && tabPreview && writeContainer && previewContainer && previewContent) {
+				tabWrite.addEventListener('click', () => {
+					tabWrite.classList.add('active');
+					tabPreview.classList.remove('active');
+					writeContainer.style.display = 'block';
+					previewContainer.style.display = 'none';
+				});
+
+				tabPreview.addEventListener('click', () => {
+					tabPreview.classList.add('active');
+					tabWrite.classList.remove('active');
+					writeContainer.style.display = 'none';
+					previewContainer.style.display = 'block';
+					renderPreview();
+				});
+			}
+
+			function renderPreview() {
+				if (!previewContent || !contentInput) return;
+				const raw = contentInput.value;
+				previewContent.innerHTML = parseMarkdownSimple(raw);
+			}
+
+			function parseMarkdownSimple(md: string): string {
+				let html = md
+					.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+					.replace(/^### (.*$)/gim, '<h3>$1</h3>')
+					.replace(/^## (.*$)/gim, '<h2>$1</h2>')
+					.replace(/^# (.*$)/gim, '<h1>$1</h1>')
+					.replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
+					.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+					.replace(/\*(.*)\*/gim, '<em>$1</em>')
+					.replace(/!\[(.*?)\]\((.*?)\)/gim, '<img alt="$1" src="$2" class="preview-img" />')
+					.replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" target="_blank">$1</a>')
+					.replace(/`([^`]+)`/gim, '<code>$1</code>')
+					.replace(/\n\n/gim, '</p><p>')
+					.replace(/\n/gim, '<br/>');
+				return `<p>${html}</p>`;
+			}
+
+			// --- Autosave Engine (localStorage) ---
+			let autosaveTimer: any = null;
+			function scheduleAutosave() {
+				if (autosaveTimer) clearTimeout(autosaveTimer);
+				autosaveTimer = setTimeout(() => {
+					const draft = {
+						title: titleInput?.value || '',
+						slug: slugInput?.value || '',
+						excerpt: excerptInput?.value || '',
+						content: contentInput?.value || '',
+						keyword: keywordInput?.value || '',
+						timestamp: Date.now(),
+					};
+					if (draft.title || draft.content) {
+						localStorage.setItem('qblog_draft', JSON.stringify(draft));
+						if (autosaveTime) {
+							const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+							autosaveTime.textContent = `● Tersimpan lokal (${timeStr})`;
+						}
+					}
+				}, 1500);
+			}
+
+			// Check existing draft on load
+			window.addEventListener('DOMContentLoaded', () => {
+				const saved = localStorage.getItem('qblog_draft');
+				if (saved && btnRestoreDraft) {
+					const parsed = JSON.parse(saved);
+					if (parsed.title || parsed.content) {
+						btnRestoreDraft.style.display = 'inline-block';
+						btnRestoreDraft.addEventListener('click', () => {
+							if (titleInput) titleInput.value = parsed.title || '';
+							if (slugInput) slugInput.value = parsed.slug || '';
+							if (excerptInput) excerptInput.value = parsed.excerpt || '';
+							if (contentInput) contentInput.value = parsed.content || '';
+							if (keywordInput) keywordInput.value = parsed.keyword || '';
+							btnRestoreDraft.style.display = 'none';
+							updateSeoScore();
+						});
+					}
+				}
+				updateSeoScore();
+			});
 
 			function updateSeoScore() {
 				const title = titleInput?.value || '';
 				const slug = slugInput?.value || '';
 				const desc = excerptInput?.value || '';
 				const content = contentInput?.value || '';
+				const kw = (keywordInput?.value || '').trim().toLowerCase();
 
 				let score = 0;
 				const hints: string[] = [];
@@ -234,7 +429,7 @@ const existingPosts = rawPosts.map((p) => ({
 					setCheck(chkTitle, true);
 				} else {
 					setCheck(chkTitle, false);
-					if (title.length < 35) hints.push('Judul terlalu pendek untuk SEO Google.');
+					if (title.length < 35) hints.push('Judul terlalu pendek (ideal 40-70 karakter).');
 				}
 
 				// 2. Slug
@@ -245,41 +440,54 @@ const existingPosts = rawPosts.map((p) => ({
 					setCheck(chkSlug, false);
 				}
 
-				// 3. Description
+				// 3. Focus Keyword check
+				if (kw.length > 2 && title.toLowerCase().includes(kw)) {
+					score += 15;
+					setCheck(chkKeyword, true);
+				} else {
+					setCheck(chkKeyword, false);
+					if (kw.length > 2) {
+						hints.push(`Sertakan focus keyword "${kw}" di dalam judul.`);
+					} else {
+						hints.push('Tentukan Focus Keyword untuk artikel ini.');
+					}
+				}
+
+				// 4. Description
 				if (desc.length >= 70 && desc.length <= 180) {
-					score += 20;
+					score += 15;
 					setCheck(chkDesc, true);
 				} else {
 					setCheck(chkDesc, false);
-					if (desc.length < 70) hints.push('Meta description terlalu pendek (disarankan 80-160 karakter).');
+					if (desc.length < 70) hints.push('Meta description terlalu pendek (80-160 karakter).');
 				}
 
-				// 4. H1
+				// 5. H1
 				if (/^#\s+.+/m.test(content)) {
-					score += 15;
+					score += 10;
 					setCheck(chkH1, true);
 				} else {
 					setCheck(chkH1, false);
 					hints.push('Tambahkan heading # H1 di dalam konten.');
 				}
 
-				// 5. Words
+				// 6. Words
 				const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
 				if (wordCount >= 150) {
 					score += 15;
 					setCheck(chkWords, true);
 				} else {
 					setCheck(chkWords, false);
-					hints.push(`Jumlah kata saat ini: ${wordCount}. Target minimal: 150 kata.`);
+					hints.push(`Jumlah kata: ${wordCount}. Target minimal: 150 kata.`);
 				}
 
-				// 6. Links
+				// 7. Links
 				if (/\[.+\]\(.+\)/.test(content)) {
-					score += 15;
+					score += 10;
 					setCheck(chkLinks, true);
 				} else {
 					setCheck(chkLinks, false);
-					hints.push('Tambahkan setidaknya 1 internal link ke artikel lain.');
+					hints.push('Tambahkan setidaknya 1 internal link kontekstual.');
 				}
 
 				if (scoreVal) scoreVal.textContent = String(score);
@@ -290,7 +498,7 @@ const existingPosts = rawPosts.map((p) => ({
 				if (hintsBox) {
 					hintsBox.innerHTML = hints.length
 						? '<strong>Rekomendasi SEO:</strong><br/>• ' + hints.join('<br/>• ')
-						: '<strong style="color: #34d399;">✓ Kriteria SEO terpenuhi dengan sangat baik!</strong>';
+						: '<strong style="color: #34d399;">✓ Seluruh kriteria SEO terpenuhi dengan baik!</strong>';
 				}
 
 				updateSmartSuggestions();
@@ -330,13 +538,11 @@ const existingPosts = rawPosts.map((p) => ({
 					let score = 0;
 					let matchReason = '';
 
-					// 1. Check title keyword matching
-					const pTitleLower = p.title.toLowerCase();
-					if (combined.includes(pTitleLower)) {
+					if (combined.includes(p.title.toLowerCase())) {
 						score += 50;
 						matchReason = 'Judul artikel cocok persis';
 					} else {
-						const words = pTitleLower.split(/\s+/).filter((w) => w.length > 3);
+						const words = p.title.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
 						const matchedWords = words.filter((w) => combined.includes(w));
 						if (matchedWords.length >= 2) {
 							score += matchedWords.length * 12;
@@ -344,18 +550,12 @@ const existingPosts = rawPosts.map((p) => ({
 						}
 					}
 
-					// 2. Check tags matching
 					(p.tags || []).forEach((tag) => {
 						if (tag && combined.includes(tag.toLowerCase())) {
 							score += 20;
 							if (!matchReason) matchReason = `Topik tag: "${tag}"`;
 						}
 					});
-
-					// 3. Category matching
-					if (p.category && combined.includes(p.category.toLowerCase())) {
-						score += 10;
-					}
 
 					if (score > 0) {
 						matches.push({ post: p, matchedBy: matchReason || 'Topik relevan', isLinked, score });
@@ -449,6 +649,13 @@ const existingPosts = rawPosts.map((p) => ({
 						content: contentInput?.value.trim(),
 						category_id: categorySelect?.value,
 						status: statusSelect?.value || 'PUBLISHED',
+						scheduled_at: scheduledInput?.value || null,
+						featured: Boolean(featuredInput?.checked),
+						focus_keyword: keywordInput?.value.trim() || null,
+						search_intent: intentSelect?.value || 'Informational',
+						canonical_url: canonicalInput?.value.trim() || null,
+						og_image: ogImageInput?.value.trim() || null,
+						seo_score: Number(scoreVal?.textContent || 85),
 					};
 
 					try {
@@ -460,6 +667,7 @@ const existingPosts = rawPosts.map((p) => ({
 
 						const data = await res.json();
 						if (res.ok && data.success) {
+							localStorage.removeItem('qblog_draft');
 							statusEl.textContent = '✓ Artikel berhasil disimpan ke Cloudflare D1!';
 							statusEl.className = 'status-msg success';
 							setTimeout(() => {
@@ -498,11 +706,40 @@ const existingPosts = rawPosts.map((p) => ({
 		margin-bottom: 2rem;
 	}
 
+	.top-nav-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.5rem;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
 	.back-link {
 		font-size: 0.85rem;
 		color: var(--text-muted);
-		display: inline-block;
-		margin-bottom: 0.5rem;
+	}
+
+	.autosave-badge-box {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.autosave-status {
+		font-size: 0.8rem;
+		color: #34d399;
+		font-family: "JetBrains Mono", monospace;
+	}
+
+	.btn-restore {
+		background: none;
+		border: 1px solid rgba(99, 102, 241, 0.4);
+		color: #a5b4fc;
+		padding: 0.2rem 0.6rem;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		cursor: pointer;
 	}
 
 	.page-title {
@@ -563,14 +800,107 @@ const existingPosts = rawPosts.map((p) => ({
 		gap: 1rem;
 	}
 
-	.select-field {
+	.checkbox-row {
+		padding: 0.5rem 0;
+	}
+
+	.checkbox-container {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
 		cursor: pointer;
+		font-size: 0.88rem;
+		color: var(--text-secondary);
+	}
+
+	.checkbox-container input {
+		width: 16px;
+		height: 16px;
+		cursor: pointer;
+	}
+
+	.content-header-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.content-header-row label {
+		font-size: 0.88rem;
+		font-weight: 600;
+	}
+
+	.editor-tabs {
+		display: flex;
+		gap: 0.25rem;
+		background: rgba(255, 255, 255, 0.04);
+		padding: 0.25rem;
+		border-radius: 6px;
+	}
+
+	.tab-btn {
+		background: none;
+		border: none;
+		color: var(--text-muted);
+		padding: 0.3rem 0.75rem;
+		font-size: 0.8rem;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: var(--transition-smooth);
+	}
+
+	.tab-btn.active {
+		background: var(--primary);
+		color: #ffffff;
 	}
 
 	.content-textarea {
 		font-family: "JetBrains Mono", monospace;
 		line-height: 1.6;
 		resize: vertical;
+	}
+
+	.preview-box {
+		padding: 1.5rem;
+		border: 1px solid var(--border-subtle);
+		background: #090d16;
+		border-radius: var(--radius-sm);
+		min-height: 250px;
+		line-height: 1.65;
+	}
+
+	.preview-content h1, .preview-content h2, .preview-content h3 {
+		color: #ffffff;
+		margin-top: 1rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.preview-content blockquote {
+		border-left: 3px solid var(--primary);
+		padding-left: 1rem;
+		color: #a5b4fc;
+		font-style: italic;
+	}
+
+	.preview-content code {
+		background: rgba(255, 255, 255, 0.08);
+		padding: 0.2rem 0.4rem;
+		border-radius: 4px;
+		font-family: "JetBrains Mono", monospace;
+	}
+
+	.advanced-seo-details {
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-sm);
+		padding: 0.75rem 1rem;
+		background: rgba(255, 255, 255, 0.01);
+	}
+
+	.advanced-seo-summary {
+		cursor: pointer;
+		font-size: 0.88rem;
+		font-weight: 600;
+		color: var(--text-secondary);
 	}
 
 	.submit-btn {

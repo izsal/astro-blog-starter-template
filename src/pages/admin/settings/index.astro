@@ -1,0 +1,238 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import { SITE_TITLE } from '../../../consts';
+import { verifyAdminSession } from '../../../lib/admin-auth';
+import { getD1Database, getAdminSettings } from '../../../lib/db';
+
+export const prerender = false;
+
+const cookie = Astro.request.headers.get('cookie');
+if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
+	return Astro.redirect('/admin');
+}
+
+const db = getD1Database(Astro.locals);
+const settings = await getAdminSettings(db);
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead title={`Platform Settings — Admin ${SITE_TITLE}`} description="Pengaturan umum, profil penulis, SEO, dan integrasi." />
+	</head>
+	<body class="admin-body">
+		<div class="admin-container">
+			<div class="page-top">
+				<div>
+					<a href="/admin/dashboard" class="back-link">&larr; Kembali ke Command Center</a>
+					<h1 class="page-title">Platform Settings & Configuration</h1>
+					<p class="page-subtitle">Konfigurasi metadata global situs, profil personal developer, SEO default, dan integrasi sosial.</p>
+				</div>
+			</div>
+
+			<form id="settings-form" class="settings-form">
+				<!-- 1. General Settings -->
+				<div class="glass-card settings-card">
+					<h3 class="card-title">🌐 Pengaturan Umum (General)</h3>
+					<div class="form-grid">
+						<div class="form-group">
+							<label>Nama Situs (Site Name)</label>
+							<input type="text" id="s-site_name" value={settings.site_name || 'Qblog'} class="input-field" required />
+						</div>
+						<div class="form-group">
+							<label>URL Domain Situs</label>
+							<input type="url" id="s-site_url" value={settings.site_url || 'https://qblog.qwarts.my.id'} class="input-field mono-field" required />
+						</div>
+						<div class="form-group">
+							<label>Bahasa Utama (Default Language)</label>
+							<input type="text" id="s-default_lang" value={settings.default_lang || 'id-ID'} class="input-field" />
+						</div>
+						<div class="form-group">
+							<label>Zona Waktu (Timezone)</label>
+							<input type="text" id="s-timezone" value={settings.timezone || 'Asia/Jakarta'} class="input-field" />
+						</div>
+					</div>
+				</div>
+
+				<!-- 2. Profile Settings -->
+				<div class="glass-card settings-card">
+					<h3 class="card-title">👤 Profil Penulis & Author Branding</h3>
+					<div class="form-grid">
+						<div class="form-group">
+							<label>Nama Pengarang / Display Name</label>
+							<input type="text" id="s-author_name" value={settings.author_name || 'qwarts/ aka iqa'} class="input-field" required />
+						</div>
+						<div class="form-group">
+							<label>Role & Jabatan</label>
+							<input type="text" id="s-author_role" value={settings.author_role || 'Fullstack & Mobile Developer'} class="input-field" required />
+						</div>
+					</div>
+					<div class="form-group" style="margin-top: 1rem;">
+						<label>Default Meta Description (SEO Ringkasan)</label>
+						<textarea id="s-default_meta_desc" rows="3" class="input-field">{settings.default_meta_desc || 'Personal Knowledge Hub & Developer Portfolio.'}</textarea>
+					</div>
+				</div>
+
+				<!-- 3. Social & External Links -->
+				<div class="glass-card settings-card">
+					<h3 class="card-title">🔗 Social Links & Profil Publik</h3>
+					<div class="form-grid">
+						<div class="form-group">
+							<label>GitHub Profile URL</label>
+							<input type="url" id="s-github_url" value={settings.github_url || 'https://github.com/izsal'} class="input-field" />
+						</div>
+						<div class="form-group">
+							<label>LinkedIn Profile URL</label>
+							<input type="url" id="s-linkedin_url" value={settings.linkedin_url || 'https://www.linkedin.com/in/izsal-qurlinas-afandi-983614165/'} class="input-field" />
+						</div>
+					</div>
+				</div>
+
+				<div class="action-row">
+					<button type="submit" class="btn btn-primary btn-save" id="save-settings-btn">
+						Simpan Semua Pengaturan ke D1
+					</button>
+					<span id="save-status" class="save-status"></span>
+				</div>
+			</form>
+		</div>
+
+		<script>
+			const form = document.getElementById('settings-form') as HTMLFormElement;
+			const statusMsg = document.getElementById('save-status') as HTMLElement;
+			const saveBtn = document.getElementById('save-settings-btn') as HTMLButtonElement;
+
+			if (form) {
+				form.addEventListener('submit', async (e) => {
+					e.preventDefault();
+					saveBtn.disabled = true;
+					statusMsg.textContent = 'Menyimpan ke Cloudflare D1...';
+
+					const payload: Record<string, string> = {
+						site_name: (document.getElementById('s-site_name') as HTMLInputElement).value.trim(),
+						site_url: (document.getElementById('s-site_url') as HTMLInputElement).value.trim(),
+						default_lang: (document.getElementById('s-default_lang') as HTMLInputElement).value.trim(),
+						timezone: (document.getElementById('s-timezone') as HTMLInputElement).value.trim(),
+						author_name: (document.getElementById('s-author_name') as HTMLInputElement).value.trim(),
+						author_role: (document.getElementById('s-author_role') as HTMLInputElement).value.trim(),
+						default_meta_desc: (document.getElementById('s-default_meta_desc') as HTMLTextAreaElement).value.trim(),
+						github_url: (document.getElementById('s-github_url') as HTMLInputElement).value.trim(),
+						linkedin_url: (document.getElementById('s-linkedin_url') as HTMLInputElement).value.trim(),
+					};
+
+					try {
+						const res = await fetch('/admin/api/settings', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify(payload),
+						});
+						if (res.ok) {
+							statusMsg.textContent = '✓ Pengaturan berhasil disimpan!';
+							statusMsg.style.color = '#34d399';
+							setTimeout(() => {
+								statusMsg.textContent = '';
+								saveBtn.disabled = false;
+							}, 2000);
+						} else {
+							statusMsg.textContent = '✕ Gagal menyimpan pengaturan.';
+							statusMsg.style.color = '#f87171';
+							saveBtn.disabled = false;
+						}
+					} catch (e) {
+						statusMsg.textContent = '✕ Kesalahan koneksi.';
+						statusMsg.style.color = '#f87171';
+						saveBtn.disabled = false;
+					}
+				});
+			}
+		</script>
+	</body>
+</html>
+
+<style>
+	.admin-body {
+		background: #080b12;
+		color: var(--text-primary);
+		min-height: 100vh;
+		padding: 2.5rem 1.5rem;
+	}
+	.admin-container {
+		max-width: 900px;
+		margin: 0 auto;
+	}
+	.page-top {
+		margin-bottom: 2rem;
+	}
+	.back-link {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		display: inline-block;
+		margin-bottom: 0.5rem;
+	}
+	.page-title {
+		font-size: 1.8rem;
+		margin: 0 0 0.25rem 0;
+	}
+	.page-subtitle {
+		font-size: 0.92rem;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+	.settings-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1.75rem;
+	}
+	.settings-card {
+		padding: 1.75rem;
+	}
+	.card-title {
+		font-size: 1.15rem;
+		margin: 0 0 1.25rem 0;
+		border-bottom: 1px solid var(--border-subtle);
+		padding-bottom: 0.5rem;
+	}
+	.form-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.25rem;
+	}
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	.form-group label {
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+	.input-field {
+		padding: 0.75rem 0.9rem;
+		border-radius: var(--radius-sm);
+		background: #0d121f;
+		border: 1px solid var(--border-subtle);
+		color: #ffffff;
+		outline: none;
+	}
+	.mono-field {
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.88rem;
+	}
+	.action-row {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-top: 0.5rem;
+	}
+	.btn-save {
+		padding: 0.85rem 1.75rem;
+		font-size: 0.95rem;
+	}
+	.save-status {
+		font-size: 0.88rem;
+		font-weight: 600;
+	}
+	@media (max-width: 650px) {
+		.form-grid { grid-template-columns: 1fr; }
+	}
+</style>

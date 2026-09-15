@@ -381,3 +381,204 @@ export async function addSubscriber(
 		return { success: false, message: "Failed to subscribe. Please try again." };
 	}
 }
+
+export interface MediaItem {
+	id: string;
+	filename: string;
+	url: string;
+	mime_type: string;
+	size_bytes: number;
+	alt_text?: string;
+	created_at: string;
+}
+
+export async function getMediaItems(db: D1Database | null): Promise<MediaItem[]> {
+	const fallbacks: MediaItem[] = [
+		{ id: "med-1", filename: "blog-placeholder-1.jpg", url: "/blog-placeholder-1.jpg", mime_type: "image/jpeg", size_bytes: 142000, alt_text: "Cloudflare D1 Architecture", created_at: "2026-03-01 10:00:00" },
+		{ id: "med-2", filename: "blog-placeholder-2.jpg", url: "/blog-placeholder-2.jpg", mime_type: "image/jpeg", size_bytes: 185000, alt_text: "Docker Compose Setup", created_at: "2026-03-02 11:30:00" },
+		{ id: "med-3", filename: "blog-placeholder-3.jpg", url: "/blog-placeholder-3.jpg", mime_type: "image/jpeg", size_bytes: 210000, alt_text: "Astro 5 Islands Benchmark", created_at: "2026-03-05 14:15:00" },
+		{ id: "med-4", filename: "blog-placeholder-about.jpg", url: "/blog-placeholder-about.jpg", mime_type: "image/jpeg", size_bytes: 160000, alt_text: "Developer Workspace", created_at: "2026-03-08 09:00:00" },
+	];
+
+	if (!db) return fallbacks;
+
+	try {
+		const { results } = await db.prepare("SELECT * FROM media ORDER BY created_at DESC").all();
+		if (results && results.length > 0) return results as any[];
+	} catch (e) {
+		console.warn("Could not query media table:", e);
+	}
+
+	return fallbacks;
+}
+
+export async function createMediaItem(
+	db: D1Database,
+	data: { filename: string; url: string; mime_type?: string; size_bytes?: number; alt_text?: string }
+): Promise<{ success: boolean; id?: string; error?: string }> {
+	try {
+		const id = "med-" + Date.now();
+		await db
+			.prepare(
+				"INSERT INTO media (id, filename, url, mime_type, size_bytes, alt_text) VALUES (?, ?, ?, ?, ?, ?)"
+			)
+			.bind(id, data.filename, data.url, data.mime_type || "image/jpeg", data.size_bytes || 0, data.alt_text || data.filename)
+			.run();
+		return { success: true, id };
+	} catch (err: any) {
+		return { success: false, error: err?.message };
+	}
+}
+
+export async function deleteMediaItem(db: D1Database, id: string): Promise<{ success: boolean; error?: string }> {
+	try {
+		await db.prepare("DELETE FROM media WHERE id = ?").bind(id).run();
+		return { success: true };
+	} catch (err: any) {
+		return { success: false, error: err?.message };
+	}
+}
+
+export interface RedirectItem {
+	id: string;
+	from_path: string;
+	to_path: string;
+	status_code: number;
+	created_at: string;
+}
+
+export async function getRedirects(db: D1Database | null): Promise<RedirectItem[]> {
+	const fallbacks: RedirectItem[] = [
+		{ id: "red-1", from_path: "/blog/astro-tutorial", to_path: "/blog/using-mdx", status_code: 301, created_at: "2026-03-01 10:00:00" },
+		{ id: "red-2", from_path: "/cloudflare-guide", to_path: "/blog/first-post", status_code: 302, created_at: "2026-03-05 12:00:00" },
+	];
+
+	if (!db) return fallbacks;
+
+	try {
+		const { results } = await db.prepare("SELECT * FROM redirects ORDER BY created_at DESC").all();
+		if (results && results.length > 0) return results as any[];
+	} catch (e) {
+		console.warn("Could not query redirects table:", e);
+	}
+
+	return fallbacks;
+}
+
+export async function createRedirect(
+	db: D1Database,
+	data: { from_path: string; to_path: string; status_code?: number }
+): Promise<{ success: boolean; id?: string; error?: string }> {
+	try {
+		const id = "red-" + Date.now();
+		await db
+			.prepare("INSERT INTO redirects (id, from_path, to_path, status_code) VALUES (?, ?, ?, ?)")
+			.bind(id, data.from_path, data.to_path, data.status_code || 301)
+			.run();
+		return { success: true, id };
+	} catch (err: any) {
+		return { success: false, error: err?.message };
+	}
+}
+
+export async function deleteRedirect(db: D1Database, id: string): Promise<{ success: boolean; error?: string }> {
+	try {
+		await db.prepare("DELETE FROM redirects WHERE id = ?").bind(id).run();
+		return { success: true };
+	} catch (err: any) {
+		return { success: false, error: err?.message };
+	}
+}
+
+export interface SettingItem {
+	key: string;
+	value: string;
+	updated_at?: string;
+}
+
+export async function getAdminSettings(db: D1Database | null): Promise<Record<string, string>> {
+	const defaults: Record<string, string> = {
+		site_name: "Qblog",
+		site_url: "https://qblog.qwarts.my.id",
+		author_name: "qwarts/ aka iqa",
+		author_role: "Fullstack & Mobile Developer",
+		default_lang: "id-ID",
+		timezone: "Asia/Jakarta",
+		default_meta_desc: "Personal Knowledge Hub & Developer Portfolio oleh qwarts/ aka iqa.",
+		github_url: "https://github.com/izsal",
+		linkedin_url: "https://www.linkedin.com/in/izsal-qurlinas-afandi-983614165/",
+		analytics_enabled: "true",
+	};
+
+	if (!db) return defaults;
+
+	try {
+		const { results } = await db.prepare("SELECT key, value FROM settings").all();
+		if (results && results.length > 0) {
+			const map = { ...defaults };
+			(results as any[]).forEach((row) => {
+				map[row.key] = row.value;
+			});
+			return map;
+		}
+	} catch (e) {
+		console.warn("Could not query settings:", e);
+	}
+
+	return defaults;
+}
+
+export async function saveAdminSetting(
+	db: D1Database,
+	key: string,
+	value: string
+): Promise<{ success: boolean; error?: string }> {
+	try {
+		await db
+			.prepare(
+				"INSERT INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP"
+			)
+			.bind(key, value)
+			.run();
+		return { success: true };
+	} catch (err: any) {
+		return { success: false, error: err?.message };
+	}
+}
+
+export async function createProjectInD1(
+	db: D1Database,
+	data: {
+		slug: string;
+		title: string;
+		description: string;
+		tech_stack: string[];
+		github_url?: string;
+		live_url?: string;
+		category: string;
+		featured?: boolean;
+	}
+): Promise<{ success: boolean; id?: number; error?: string }> {
+	try {
+		const techJson = JSON.stringify(data.tech_stack || []);
+		await db
+			.prepare(
+				`INSERT INTO projects (slug, title, description, tech_stack, github_url, live_url, featured, category)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+			)
+			.bind(
+				data.slug,
+				data.title,
+				data.description,
+				techJson,
+				data.github_url || null,
+				data.live_url || null,
+				data.featured ? 1 : 0,
+				data.category || "Fullstack"
+			)
+			.run();
+		return { success: true };
+	} catch (err: any) {
+		return { success: false, error: err?.message };
+	}
+}

@@ -12,22 +12,35 @@ if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
 	return Astro.redirect('/admin');
 }
 
+const tab = Astro.url.searchParams.get('tab') || 'ALL';
 const db = getD1Database(Astro.locals);
-const posts = await getUnifiedPosts(db);
+
+const isTrashTab = tab === 'TRASH';
+const filterStatus = isTrashTab ? undefined : tab === 'ALL' ? undefined : tab;
+const posts = await getUnifiedPosts(db, { status: filterStatus, includeTrashed: isTrashTab });
+
+const allPostsForCount = await getUnifiedPosts(db, { status: 'ALL' });
+const trashedPostsForCount = await getUnifiedPosts(db, { includeTrashed: true });
+
+const countAll = allPostsForCount.length;
+const countPublished = allPostsForCount.filter((p) => p.status === 'PUBLISHED').length;
+const countDraft = allPostsForCount.filter((p) => p.status === 'DRAFT').length;
+const countScheduled = allPostsForCount.filter((p) => p.status === 'SCHEDULED').length;
+const countTrash = trashedPostsForCount.length;
 ---
 
 <!doctype html>
 <html lang="id">
 	<head>
-		<BaseHead title={`Manage Posts — Admin ${SITE_TITLE}`} description="Admin post management." />
+		<BaseHead title={`Kelola Artikel — Admin ${SITE_TITLE}`} description="Pusat pengelolaan artikel, status, dan performa SEO." />
 	</head>
 	<body class="admin-body">
 		<div class="admin-container">
 			<div class="page-top">
 				<div>
 					<a href="/admin/dashboard" class="back-link">&larr; Kembali ke Command Center</a>
-					<h1 class="page-title">Articles & Content Management</h1>
-					<p class="page-subtitle">Daftar artikel terpublikasi dan draft di database Cloudflare D1 & Content Collections.</p>
+					<h1 class="page-title">Articles & Post Management</h1>
+					<p class="page-subtitle">Pusat kontrol siklus hidup konten, draft, jadwal publikasi, dan skor SEO.</p>
 				</div>
 				<div class="top-actions">
 					<a href="/admin/intelligence" class="btn btn-secondary">🧠 Content Intelligence</a>
@@ -35,49 +48,160 @@ const posts = await getUnifiedPosts(db);
 				</div>
 			</div>
 
+			<!-- Tabs Bar (All, Drafts, Published, Scheduled, Trash) -->
+			<div class="tabs-nav-bar">
+				<a href="/admin/posts" class:list={['tab-item', tab === 'ALL' && 'active']}>
+					All Posts ({countAll})
+				</a>
+				<a href="/admin/posts?tab=PUBLISHED" class:list={['tab-item', tab === 'PUBLISHED' && 'active']}>
+					Published ({countPublished})
+				</a>
+				<a href="/admin/posts?tab=DRAFT" class:list={['tab-item', tab === 'DRAFT' && 'active']}>
+					Drafts ({countDraft})
+				</a>
+				<a href="/admin/posts?tab=SCHEDULED" class:list={['tab-item', tab === 'SCHEDULED' && 'active']}>
+					Scheduled ({countScheduled})
+				</a>
+				<a href="/admin/posts?tab=TRASH" class:list={['tab-item', tab === 'TRASH' && 'active', 'tab-trash']}>
+					Trash ({countTrash})
+				</a>
+			</div>
+
+			<!-- Posts Table -->
 			<div class="glass-card posts-table-card">
 				<table class="admin-table">
 					<thead>
 						<tr>
-							<th>Judul Artikel</th>
-							<th>Kategori</th>
-							<th>Tanggal</th>
-							<th>Sumber</th>
+							<th>Post (Judul & Slug)</th>
+							<th>Status</th>
+							<th>Category</th>
 							<th>Views</th>
+							<th>SEO Score</th>
+							<th>Updated</th>
 							<th>Aksi</th>
 						</tr>
 					</thead>
 					<tbody>
-						{posts.map((post) => (
+						{posts.length === 0 ? (
 							<tr>
-								<td>
-									<a href={`/blog/${post.slug}/`} target="_blank" class="post-row-title">
-										{post.title}
-									</a>
-								</td>
-								<td>
-									<span class="pill pill-cyan">{post.category || 'Development'}</span>
-								</td>
-								<td class="date-cell">
-									{new Date(post.published_at).toLocaleDateString('id-ID')}
-								</td>
-								<td>
-									<span class:list={['pill', post.is_d1 ? 'pill-emerald' : 'pill-neutral']}>
-										{post.is_d1 ? 'D1 Database' : 'Markdown'}
-									</span>
-								</td>
-								<td class="views-cell">
-									{post.views || 0}
-								</td>
-								<td>
-									<a href={`/blog/${post.slug}/`} target="_blank" class="table-link">Preview ↗</a>
-								</td>
+								<td colspan="7" class="empty-cell">Tidak ada artikel dalam tab ini.</td>
 							</tr>
-						))}
+						) : (
+							posts.map((post) => (
+								<tr>
+									<td>
+										<div class="post-title-cell">
+											<a href={`/blog/${post.slug}/`} target="_blank" class="post-row-title">
+												{post.title}
+											</a>
+											<span class="post-slug-sub">/{post.slug}</span>
+										</div>
+									</td>
+									<td>
+										{post.is_trashed ? (
+											<span class="pill pill-red pill-xs">Trashed</span>
+										) : post.status === 'DRAFT' ? (
+											<span class="pill pill-amber pill-xs">Draft</span>
+										) : post.status === 'SCHEDULED' ? (
+											<span class="pill pill-violet pill-xs">Scheduled</span>
+										) : (
+											<span class="pill pill-emerald pill-xs">Published</span>
+										)}
+									</td>
+									<td>
+										<span class="pill pill-neutral pill-xs">{post.category || 'Development'}</span>
+									</td>
+									<td class="views-cell">
+										{post.views ? post.views.toLocaleString() : '-'}
+									</td>
+									<td>
+										<span class:list={['pill', 'pill-xs', (post.seo_score || 85) >= 80 ? 'pill-emerald' : 'pill-amber']}>
+											{post.seo_score || 85}/100
+										</span>
+									</td>
+									<td class="date-cell">
+										{new Date(post.updated_at || post.published_at).toLocaleDateString('id-ID')}
+									</td>
+									<td>
+										<div class="row-actions">
+											<a href={`/blog/${post.slug}/`} target="_blank" class="btn-action" title="Preview Artikel">
+												Preview ↗
+											</a>
+											{post.is_d1 && (
+												<button type="button" class="btn-action btn-duplicate" data-id={post.id} title="Duplicate Article">
+													⧉ Duplicate
+												</button>
+											)}
+											{isTrashTab ? (
+												<button type="button" class="btn-action text-emerald btn-restore" data-id={post.id}>
+													↺ Restore
+												</button>
+											) : (
+												post.is_d1 && (
+													<button type="button" class="btn-action text-red btn-trash" data-id={post.id} title="Move to Trash">
+														🗑️ Trash
+													</button>
+												)
+											)}
+										</div>
+									</td>
+								</tr>
+							))
+						)}
 					</tbody>
 				</table>
 			</div>
 		</div>
+
+		<script>
+			// Duplicate handler
+			document.querySelectorAll('.btn-duplicate').forEach((btn) => {
+				btn.addEventListener('click', async () => {
+					const id = btn.getAttribute('data-id');
+					if (!id) return;
+					const res = await fetch(`/admin/api/posts/${id}`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ action: 'duplicate' }),
+					});
+					if (res.ok) {
+						window.location.reload();
+					} else {
+						alert('Gagal menduplikasi artikel.');
+					}
+				});
+			});
+
+			// Trash handler
+			document.querySelectorAll('.btn-trash').forEach((btn) => {
+				btn.addEventListener('click', async () => {
+					const id = btn.getAttribute('data-id');
+					if (!id || !confirm('Pindahkan artikel ini ke Trash?')) return;
+					const res = await fetch(`/admin/api/posts/${id}`, { method: 'DELETE' });
+					if (res.ok) {
+						window.location.reload();
+					} else {
+						alert('Gagal memindahkan artikel.');
+					}
+				});
+			});
+
+			// Restore handler
+			document.querySelectorAll('.btn-restore').forEach((btn) => {
+				btn.addEventListener('click', async () => {
+					const id = btn.getAttribute('data-id');
+					if (!id) return;
+					const res = await fetch(`/admin/api/posts/${id}`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ action: 'restore' }),
+					});
+					if (res.ok) {
+						window.location.reload();
+					}
+				});
+			});
+		</script>
 	</body>
 </html>
 
@@ -88,12 +212,10 @@ const posts = await getUnifiedPosts(db);
 		min-height: 100vh;
 		padding: 2.5rem 1.5rem;
 	}
-
 	.admin-container {
-		max-width: 1050px;
+		max-width: 1150px;
 		margin: 0 auto;
 	}
-
 	.page-top {
 		display: flex;
 		justify-content: space-between;
@@ -102,80 +224,143 @@ const posts = await getUnifiedPosts(db);
 		flex-wrap: wrap;
 		gap: 1rem;
 	}
-
 	.top-actions {
 		display: flex;
 		gap: 0.75rem;
 		align-items: center;
 		flex-wrap: wrap;
 	}
-
 	.back-link {
 		font-size: 0.85rem;
 		color: var(--text-muted);
-		margin-bottom: 0.5rem;
 		display: inline-block;
+		margin-bottom: 0.5rem;
 	}
-
-	.back-link:hover {
-		color: var(--primary-light);
-	}
-
 	.page-title {
-		font-size: 1.75rem;
-		margin-bottom: 0.25rem;
+		font-size: 1.8rem;
+		margin: 0 0 0.25rem 0;
 	}
-
 	.page-subtitle {
 		font-size: 0.92rem;
 		color: var(--text-secondary);
 		margin: 0;
 	}
-
+	.tabs-nav-bar {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 1.5rem;
+		border-bottom: 1px solid var(--border-subtle);
+		padding-bottom: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.tab-item {
+		padding: 0.5rem 0.95rem;
+		border-radius: var(--radius-sm);
+		font-size: 0.88rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		text-decoration: none;
+		transition: var(--transition-smooth);
+	}
+	.tab-item:hover {
+		color: #ffffff;
+		background: rgba(255, 255, 255, 0.04);
+	}
+	.tab-item.active {
+		color: #ffffff;
+		background: rgba(99, 102, 241, 0.15);
+		border: 1px solid rgba(99, 102, 241, 0.35);
+	}
+	.tab-trash {
+		margin-left: auto;
+	}
 	.posts-table-card {
 		padding: 1.5rem;
 		overflow-x: auto;
 	}
-
 	.admin-table {
 		width: 100%;
 		border-collapse: collapse;
 		text-align: left;
-		font-size: 0.9rem;
+		font-size: 0.88rem;
 	}
-
 	.admin-table th {
 		padding: 0.85rem 1rem;
 		color: var(--text-muted);
 		border-bottom: 1px solid var(--border-subtle);
 		font-weight: 600;
-		font-size: 0.82rem;
+		font-size: 0.8rem;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 	}
-
 	.admin-table td {
 		padding: 1rem;
-		border-bottom: 1px solid var(--border-subtle);
-		color: var(--text-secondary);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 	}
-
+	.post-title-cell {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+	}
 	.post-row-title {
 		color: #ffffff;
 		font-weight: 600;
+		text-decoration: none;
 	}
-
 	.post-row-title:hover {
 		color: var(--primary-light);
 	}
-
+	.post-slug-sub {
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		font-family: "JetBrains Mono", monospace;
+	}
+	.pill-xs {
+		font-size: 0.72rem;
+		padding: 0.15rem 0.45rem;
+	}
+	.pill-amber {
+		background: rgba(245, 158, 11, 0.15);
+		color: #f59e0b;
+		border: 1px solid rgba(245, 158, 11, 0.3);
+	}
+	.pill-red {
+		background: rgba(239, 68, 68, 0.15);
+		color: #f87171;
+		border: 1px solid rgba(239, 68, 68, 0.3);
+	}
 	.date-cell, .views-cell {
 		font-family: "JetBrains Mono", monospace;
 		font-size: 0.85rem;
 	}
-
-	.table-link {
-		color: var(--primary-light);
-		font-weight: 500;
+	.row-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.btn-action {
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid var(--border-subtle);
+		color: var(--text-secondary);
+		padding: 0.25rem 0.55rem;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		cursor: pointer;
+		text-decoration: none;
+		transition: var(--transition-smooth);
+	}
+	.btn-action:hover {
+		background: var(--primary);
+		color: #ffffff;
+	}
+	.text-red { color: #f87171; }
+	.text-red:hover { background: #ef4444; color: #ffffff; }
+	.text-emerald { color: #34d399; }
+	.text-emerald:hover { background: #10b981; color: #ffffff; }
+	.empty-cell {
+		text-align: center;
+		padding: 3rem 1rem !important;
+		color: var(--text-muted);
 	}
 </style>

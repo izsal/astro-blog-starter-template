@@ -1,0 +1,408 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import { SITE_TITLE } from '../../../consts';
+import { verifyAdminSession } from '../../../lib/admin-auth';
+import { getD1Database, getMediaItems } from '../../../lib/db';
+
+export const prerender = false;
+
+const cookie = Astro.request.headers.get('cookie');
+if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
+	return Astro.redirect('/admin');
+}
+
+const db = getD1Database(Astro.locals);
+const mediaList = await getMediaItems(db);
+
+const totalImages = mediaList.filter((m) => m.mime_type.startsWith('image/')).length;
+const totalDocs = mediaList.length - totalImages;
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead title={`Media Library — Admin ${SITE_TITLE}`} description="Kelola aset gambar, diagram, dan dokumen artikel." />
+	</head>
+	<body class="admin-body">
+		<div class="admin-container">
+			<div class="page-top">
+				<div>
+					<a href="/admin/dashboard" class="back-link">&larr; Kembali ke Command Center</a>
+					<h1 class="page-title">Media Library (Cloudflare R2 & Assets)</h1>
+					<p class="page-subtitle">Katalog aset gambar, poster banner, diagram arsitektur, dan berkas statis artikel.</p>
+				</div>
+				<button type="button" class="btn btn-primary" id="open-upload-btn">+ Tambah File Baru</button>
+			</div>
+
+			<!-- Media Stats Grid -->
+			<div class="media-stats-grid">
+				<div class="glass-card stat-item">
+					<span class="stat-label">Total Files</span>
+					<strong class="stat-num">{mediaList.length}</strong>
+				</div>
+				<div class="glass-card stat-item">
+					<span class="stat-label">Images</span>
+					<strong class="stat-num text-cyan">{totalImages}</strong>
+				</div>
+				<div class="glass-card stat-item">
+					<span class="stat-label">Documents</span>
+					<strong class="stat-num text-violet">{totalDocs}</strong>
+				</div>
+				<div class="glass-card stat-item">
+					<span class="stat-label">Storage Provider</span>
+					<strong class="stat-num text-emerald">Cloudflare R2</strong>
+				</div>
+			</div>
+
+			<!-- Add Media Modal Form (Hidden by default) -->
+			<div id="upload-modal" class="glass-card upload-modal-card" style="display: none;">
+				<h3 class="modal-title">Tambah Berkas Media Baru</h3>
+				<form id="media-form" class="media-form">
+					<div class="form-row">
+						<div class="form-group">
+							<label>Nama File</label>
+							<input type="text" id="m-filename" placeholder="contoh: cloudflare-d1-diagram.png" required class="input-field" />
+						</div>
+						<div class="form-group">
+							<label>URL Publik (R2 / CDN / Path)</label>
+							<input type="text" id="m-url" placeholder="/blog-placeholder-1.jpg" required class="input-field" />
+						</div>
+					</div>
+					<div class="form-row">
+						<div class="form-group">
+							<label>Alt Text (SEO Image)</label>
+							<input type="text" id="m-alt" placeholder="Diagram arsitektur sistem..." class="input-field" />
+						</div>
+						<div class="form-group">
+							<label>Tipe Berkas (MIME)</label>
+							<select id="m-mime" class="input-field select-field">
+								<option value="image/jpeg">image/jpeg (JPG/JPEG)</option>
+								<option value="image/png">image/png (PNG)</option>
+								<option value="image/webp">image/webp (WebP Modern)</option>
+								<option value="image/svg+xml">image/svg+xml (Vector SVG)</option>
+								<option value="application/pdf">application/pdf (Dokumen)</option>
+							</select>
+						</div>
+					</div>
+					<div class="modal-actions">
+						<button type="submit" class="btn btn-primary btn-sm">Simpan ke Katalog Media</button>
+						<button type="button" class="btn btn-secondary btn-sm" id="close-upload-btn">Batal</button>
+					</div>
+				</form>
+			</div>
+
+			<!-- Media Gallery Grid -->
+			<div class="media-gallery-grid">
+				{mediaList.map((media) => (
+					<div class="glass-card media-card" data-id={media.id}>
+						<div class="media-preview-box">
+							{media.mime_type.startsWith('image/') ? (
+								<img src={media.url} alt={media.alt_text || media.filename} class="media-img" loading="lazy" />
+							) : (
+								<div class="doc-icon-box">📄</div>
+							)}
+						</div>
+						<div class="media-info">
+							<strong class="media-filename" title={media.filename}>{media.filename}</strong>
+							<div class="media-sub">
+								<span>{Math.round(media.size_bytes / 1024)} KB</span>
+								<span class="pill pill-neutral pill-xs">{media.mime_type.replace('image/', '')}</span>
+							</div>
+							<p class="media-alt">Alt: {media.alt_text || '-'}</p>
+							<div class="media-actions">
+								<button type="button" class="btn-copy-url btn-xs" data-url={media.url}>Copy URL</button>
+								<button type="button" class="btn-copy-md btn-xs" data-md={`![${media.alt_text || media.filename}](${media.url})`}>Copy Markdown</button>
+								<button type="button" class="btn-del-media btn-xs text-red" data-id={media.id}>Hapus</button>
+							</div>
+						</div>
+					</div>
+				))}
+			</div>
+		</div>
+
+		<div id="toast" class="toast-box">Copied!</div>
+
+		<script>
+			const openBtn = document.getElementById('open-upload-btn');
+			const closeBtn = document.getElementById('close-upload-btn');
+			const modal = document.getElementById('upload-modal');
+			const form = document.getElementById('media-form') as HTMLFormElement;
+			const toast = document.getElementById('toast');
+
+			function showToast(msg: string) {
+				if (!toast) return;
+				toast.textContent = msg;
+				toast.classList.add('show');
+				setTimeout(() => toast.classList.remove('show'), 2000);
+			}
+
+			if (openBtn && modal) {
+				openBtn.addEventListener('click', () => {
+					modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+				});
+			}
+			if (closeBtn && modal) {
+				closeBtn.addEventListener('click', () => {
+					modal.style.display = 'none';
+				});
+			}
+
+			if (form) {
+				form.addEventListener('submit', async (e) => {
+					e.preventDefault();
+					const payload = {
+						filename: (document.getElementById('m-filename') as HTMLInputElement).value.trim(),
+						url: (document.getElementById('m-url') as HTMLInputElement).value.trim(),
+						alt_text: (document.getElementById('m-alt') as HTMLInputElement).value.trim(),
+						mime_type: (document.getElementById('m-mime') as HTMLSelectElement).value,
+						size_bytes: 150000,
+					};
+
+					try {
+						const res = await fetch('/admin/api/media', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify(payload),
+						});
+						if (res.ok) {
+							showToast('✓ Berkas berhasil ditambahkan!');
+							setTimeout(() => window.location.reload(), 800);
+						}
+					} catch (e) {
+						alert('Gagal menyimpan berkas');
+					}
+				});
+			}
+
+			// Copy Buttons
+			document.querySelectorAll('.btn-copy-url').forEach((btn) => {
+				btn.addEventListener('click', () => {
+					const url = btn.getAttribute('data-url') || '';
+					navigator.clipboard.writeText(url);
+					showToast('✓ URL tersalin ke clipboard!');
+				});
+			});
+
+			document.querySelectorAll('.btn-copy-md').forEach((btn) => {
+				btn.addEventListener('click', () => {
+					const md = btn.getAttribute('data-md') || '';
+					navigator.clipboard.writeText(md);
+					showToast('✓ Markdown snippet tersalin!');
+				});
+			});
+
+			// Delete Buttons
+			document.querySelectorAll('.btn-del-media').forEach((btn) => {
+				btn.addEventListener('click', async () => {
+					const id = btn.getAttribute('data-id');
+					if (!id || !confirm('Hapus berkas ini dari katalog?')) return;
+					const res = await fetch(`/admin/api/media?id=${id}`, { method: 'DELETE' });
+					if (res.ok) {
+						showToast('✓ Berkas dihapus');
+						btn.closest('.media-card')?.remove();
+					}
+				});
+			});
+		</script>
+	</body>
+</html>
+
+<style>
+	.admin-body {
+		background: #080b12;
+		color: var(--text-primary);
+		min-height: 100vh;
+		padding: 2.5rem 1.5rem;
+	}
+	.admin-container {
+		max-width: 1100px;
+		margin: 0 auto;
+	}
+	.page-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 2rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+	.back-link {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		display: inline-block;
+		margin-bottom: 0.5rem;
+	}
+	.page-title {
+		font-size: 1.8rem;
+		margin: 0 0 0.25rem 0;
+	}
+	.page-subtitle {
+		font-size: 0.92rem;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+	.media-stats-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 1rem;
+		margin-bottom: 2rem;
+	}
+	.stat-item {
+		padding: 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+	.stat-label {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		text-transform: uppercase;
+	}
+	.stat-num {
+		font-size: 1.6rem;
+		font-weight: 800;
+	}
+	.upload-modal-card {
+		padding: 1.75rem;
+		margin-bottom: 2rem;
+		border: 1px solid var(--primary);
+	}
+	.modal-title {
+		margin: 0 0 1.25rem 0;
+		font-size: 1.15rem;
+	}
+	.media-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.form-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	.form-group label {
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+	.input-field {
+		padding: 0.75rem 0.9rem;
+		border-radius: var(--radius-sm);
+		background: #0d121f;
+		border: 1px solid var(--border-subtle);
+		color: #ffffff;
+		outline: none;
+	}
+	.modal-actions {
+		display: flex;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
+	}
+	.btn-sm {
+		padding: 0.5rem 1rem;
+		font-size: 0.88rem;
+	}
+	.media-gallery-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+		gap: 1.25rem;
+	}
+	.media-card {
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+	.media-preview-box {
+		width: 100%;
+		height: 140px;
+		background: #0d121f;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+	.media-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	.doc-icon-box {
+		font-size: 2.5rem;
+	}
+	.media-info {
+		padding: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	.media-filename {
+		font-size: 0.88rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.media-sub {
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.78rem;
+		color: var(--text-muted);
+	}
+	.pill-xs {
+		font-size: 0.7rem;
+		padding: 0.1rem 0.4rem;
+	}
+	.media-alt {
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		margin: 0;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.media-actions {
+		display: flex;
+		gap: 0.4rem;
+		margin-top: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.btn-xs {
+		padding: 0.25rem 0.5rem;
+		font-size: 0.72rem;
+		border-radius: 4px;
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid var(--border-subtle);
+		color: var(--text-secondary);
+		cursor: pointer;
+	}
+	.btn-xs:hover {
+		background: var(--primary);
+		color: #ffffff;
+	}
+	.text-red { color: #f87171; }
+	.text-red:hover { background: #ef4444; color: #ffffff; }
+	.toast-box {
+		position: fixed;
+		bottom: 2rem;
+		right: 2rem;
+		background: #10b981;
+		color: #ffffff;
+		padding: 0.75rem 1.25rem;
+		border-radius: var(--radius-sm);
+		font-size: 0.88rem;
+		font-weight: 600;
+		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+		opacity: 0;
+		transform: translateY(10px);
+		transition: all 0.25s ease;
+		pointer-events: none;
+	}
+	.toast-box.show {
+		opacity: 1;
+		transform: translateY(0);
+	}
+</style>

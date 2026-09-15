@@ -1,0 +1,265 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import { SITE_TITLE } from '../../../consts';
+import { verifyAdminSession } from '../../../lib/admin-auth';
+import { getD1Database, getRedirects } from '../../../lib/db';
+
+export const prerender = false;
+
+const cookie = Astro.request.headers.get('cookie');
+if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
+	return Astro.redirect('/admin');
+}
+
+const db = getD1Database(Astro.locals);
+const redirects = await getRedirects(db);
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead title={`Redirect Manager — Admin ${SITE_TITLE}`} description="Kelola pengalihan URL 301 dan 302." />
+	</head>
+	<body class="admin-body">
+		<div class="admin-container">
+			<div class="page-top">
+				<div>
+					<a href="/admin/dashboard" class="back-link">&larr; Kembali ke Command Center</a>
+					<h1 class="page-title">Redirect Manager (301 / 302)</h1>
+					<p class="page-subtitle">Cegah Broken Links (404) dan jaga SEO link equity saat URL atau slug artikel diubah.</p>
+				</div>
+			</div>
+
+			<!-- Add Redirect Form Card -->
+			<div class="glass-card add-redirect-card">
+				<h3 class="card-heading">Tambah Aturan Redirect Baru</h3>
+				<form id="redirect-form" class="redirect-form">
+					<div class="form-row">
+						<div class="form-group">
+							<label>From Path (URL Asal)</label>
+							<input type="text" id="r-from" placeholder="/blog/old-slug" required class="input-field mono-field" />
+						</div>
+						<div class="form-group">
+							<label>To Path (URL Tujuan)</label>
+							<input type="text" id="r-to" placeholder="/blog/new-slug" required class="input-field mono-field" />
+						</div>
+						<div class="form-group form-group-sm">
+							<label>Status Code</label>
+							<select id="r-code" class="input-field select-field">
+								<option value="301">301 (Permanent Redirect)</option>
+								<option value="302">302 (Temporary Redirect)</option>
+							</select>
+						</div>
+						<div class="form-group-btn">
+							<button type="submit" class="btn btn-primary btn-submit">Simpan Redirect</button>
+						</div>
+					</div>
+				</form>
+				<p id="redirect-msg" class="status-msg"></p>
+			</div>
+
+			<!-- Redirects Table Card -->
+			<div class="glass-card table-card">
+				<div class="table-header">
+					<h3>Aturan Pengalihan Aktif ({redirects.length})</h3>
+				</div>
+				<table class="admin-table">
+					<thead>
+						<tr>
+							<th>URL Asal (From)</th>
+							<th>URL Tujuan (To)</th>
+							<th>Tipe</th>
+							<th>Tanggal Dibuat</th>
+							<th>Aksi</th>
+						</tr>
+					</thead>
+					<tbody>
+						{redirects.map((r) => (
+							<tr>
+								<td><code>{r.from_path}</code></td>
+								<td><a href={r.to_path} target="_blank" class="text-cyan"><code>{r.to_path}</code> ↗</a></td>
+								<td>
+									<span class={r.status_code === 301 ? 'pill pill-emerald pill-xs' : 'pill pill-cyan pill-xs'}>
+										{r.status_code}
+									</span>
+								</td>
+								<td class="text-muted text-sm">{new Date(r.created_at).toLocaleDateString('id-ID')}</td>
+								<td>
+									<button type="button" class="btn-del-redirect btn-xs text-red" data-id={r.id}>Hapus</button>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<script>
+			const form = document.getElementById('redirect-form') as HTMLFormElement;
+			const msg = document.getElementById('redirect-msg') as HTMLElement;
+
+			if (form) {
+				form.addEventListener('submit', async (e) => {
+					e.preventDefault();
+					const fromPath = (document.getElementById('r-from') as HTMLInputElement).value.trim();
+					const toPath = (document.getElementById('r-to') as HTMLInputElement).value.trim();
+					const statusCode = Number((document.getElementById('r-code') as HTMLSelectElement).value);
+
+					try {
+						const res = await fetch('/admin/api/redirects', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ from_path: fromPath, to_path: toPath, status_code: statusCode }),
+						});
+						const data = await res.json();
+						if (res.ok && data.success) {
+							msg.textContent = '✓ Aturan redirect berhasil ditambahkan!';
+							msg.className = 'status-msg success';
+							setTimeout(() => window.location.reload(), 800);
+						} else {
+							msg.textContent = '✕ Gagal: ' + (data.error || 'Terjadi kesalahan');
+							msg.className = 'status-msg error';
+						}
+					} catch (e) {
+						msg.textContent = '✕ Terjadi kesalahan koneksi.';
+						msg.className = 'status-msg error';
+					}
+				});
+			}
+
+			document.querySelectorAll('.btn-del-redirect').forEach((btn) => {
+				btn.addEventListener('click', async () => {
+					const id = btn.getAttribute('data-id');
+					if (!id || !confirm('Hapus aturan redirect ini?')) return;
+					const res = await fetch(`/admin/api/redirects?id=${id}`, { method: 'DELETE' });
+					if (res.ok) {
+						btn.closest('tr')?.remove();
+					}
+				});
+			});
+		</script>
+	</body>
+</html>
+
+<style>
+	.admin-body {
+		background: #080b12;
+		color: var(--text-primary);
+		min-height: 100vh;
+		padding: 2.5rem 1.5rem;
+	}
+	.admin-container {
+		max-width: 1000px;
+		margin: 0 auto;
+	}
+	.page-top {
+		margin-bottom: 2rem;
+	}
+	.back-link {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		display: inline-block;
+		margin-bottom: 0.5rem;
+	}
+	.page-title {
+		font-size: 1.8rem;
+		margin: 0 0 0.25rem 0;
+	}
+	.page-subtitle {
+		font-size: 0.92rem;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+	.add-redirect-card {
+		padding: 1.75rem;
+		margin-bottom: 2rem;
+	}
+	.card-heading {
+		font-size: 1.1rem;
+		margin: 0 0 1.25rem 0;
+	}
+	.form-row {
+		display: grid;
+		grid-template-columns: 1.5fr 1.5fr 1fr auto;
+		gap: 1rem;
+		align-items: end;
+	}
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+	.form-group label {
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+	.input-field {
+		padding: 0.75rem 0.9rem;
+		border-radius: var(--radius-sm);
+		background: #0d121f;
+		border: 1px solid var(--border-subtle);
+		color: #ffffff;
+		outline: none;
+	}
+	.mono-field {
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.88rem;
+	}
+	.btn-submit {
+		padding: 0.75rem 1.25rem;
+		white-space: nowrap;
+	}
+	.status-msg {
+		margin-top: 0.75rem;
+		font-size: 0.85rem;
+	}
+	.status-msg.success { color: #34d399; }
+	.status-msg.error { color: #f87171; }
+	.table-card {
+		padding: 1.5rem;
+		overflow-x: auto;
+	}
+	.table-header {
+		margin-bottom: 1.25rem;
+	}
+	.table-header h3 {
+		font-size: 1.1rem;
+		margin: 0;
+	}
+	.admin-table {
+		width: 100%;
+		border-collapse: collapse;
+		text-align: left;
+		font-size: 0.88rem;
+	}
+	.admin-table th {
+		padding: 0.75rem 1rem;
+		border-bottom: 1px solid var(--border-subtle);
+		color: var(--text-muted);
+		font-weight: 600;
+	}
+	.admin-table td {
+		padding: 0.9rem 1rem;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+	}
+	.pill-xs {
+		font-size: 0.75rem;
+		padding: 0.15rem 0.5rem;
+	}
+	.text-sm { font-size: 0.82rem; }
+	.btn-xs {
+		padding: 0.25rem 0.6rem;
+		font-size: 0.75rem;
+		border-radius: 4px;
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid var(--border-subtle);
+		cursor: pointer;
+	}
+	.text-red { color: #f87171; }
+	.text-red:hover { background: #ef4444; color: #ffffff; }
+	@media (max-width: 768px) {
+		.form-row {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

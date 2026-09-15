@@ -1,0 +1,243 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import { SITE_TITLE } from '../../../consts';
+import { verifyAdminSession } from '../../../lib/admin-auth';
+import { getD1Database } from '../../../lib/db';
+
+export const prerender = false;
+
+const cookie = Astro.request.headers.get('cookie');
+if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
+	return Astro.redirect('/admin');
+}
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead title={`Tambah Project Baru — Admin ${SITE_TITLE}`} description="Tambah portofolio proyek ke Cloudflare D1." />
+	</head>
+	<body class="admin-body">
+		<div class="editor-container">
+			<div class="editor-top">
+				<a href="/admin/dashboard" class="back-link">&larr; Batal & Kembali ke Dashboard</a>
+				<h1 class="page-title">Tambah Project Baru (D1 Database)</h1>
+				<p class="page-desc">Simpan showcase portofolio aplikasi web, mobile, atau infrastruktur ke database Cloudflare D1.</p>
+			</div>
+
+			<form id="project-form" class="editor-form glass-card">
+				<div class="form-group">
+					<label for="proj-title">Judul Project</label>
+					<input type="text" id="proj-title" placeholder="Contoh: Netflix Clone Platform" required class="input-field" />
+				</div>
+
+				<div class="form-group">
+					<label for="proj-slug">URL Slug</label>
+					<input type="text" id="proj-slug" placeholder="netflix-clone" required class="input-field mono-field" />
+				</div>
+
+				<div class="form-row">
+					<div class="form-group">
+						<label for="proj-category">Kategori Project</label>
+						<select id="proj-category" class="input-field select-field">
+							<option value="Frontend">Frontend</option>
+							<option value="Fullstack">Fullstack</option>
+							<option value="Mobile App">Mobile App</option>
+							<option value="Backend & Cloud">Backend & Cloud</option>
+							<option value="DevOps & Linux">DevOps & Linux</option>
+							<option value="GIS & Web">GIS & Web</option>
+						</select>
+					</div>
+
+					<div class="form-group">
+						<label for="proj-featured">Status Featured</label>
+						<select id="proj-featured" class="input-field select-field">
+							<option value="1">Tampilkan di Homepage (Featured)</option>
+							<option value="0">Tampilkan di Katalog Proyek Saja</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="form-group">
+					<label for="proj-desc">Deskripsi Singkat Project</label>
+					<textarea id="proj-desc" rows="3" placeholder="Aplikasi streaming video modern dengan filter genre dan trailer interaktif..." required class="input-field"></textarea>
+				</div>
+
+				<div class="form-group">
+					<label for="proj-tech">Tech Stack (Pisahkan dengan koma)</label>
+					<input type="text" id="proj-tech" placeholder="React.js, Next.js, Tailwind CSS, Vercel" class="input-field" />
+				</div>
+
+				<div class="form-row">
+					<div class="form-group">
+						<label for="proj-github">GitHub Repository URL</label>
+						<input type="url" id="proj-github" placeholder="https://github.com/izsal/my-project" class="input-field" />
+					</div>
+
+					<div class="form-group">
+						<label for="proj-live">Live Demo URL</label>
+						<input type="url" id="proj-live" placeholder="https://my-project.vercel.app" class="input-field" />
+					</div>
+				</div>
+
+				<button type="submit" class="btn btn-primary submit-btn" id="save-btn">
+					Simpan Project ke Cloudflare D1
+				</button>
+				<p id="status-msg" class="status-msg"></p>
+			</form>
+		</div>
+
+		<script>
+			const titleInput = document.getElementById('proj-title') as HTMLInputElement;
+			const slugInput = document.getElementById('proj-slug') as HTMLInputElement;
+			const form = document.getElementById('project-form') as HTMLFormElement;
+			const statusMsg = document.getElementById('status-msg') as HTMLElement;
+			const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
+
+			if (titleInput && slugInput) {
+				titleInput.addEventListener('input', () => {
+					if (!slugInput.dataset.manual) {
+						slugInput.value = titleInput.value
+							.toLowerCase()
+							.replace(/[^a-z0-9]+/g, '-')
+							.replace(/(^-|-$)+/g, '');
+					}
+				});
+				slugInput.addEventListener('input', () => {
+					slugInput.dataset.manual = 'true';
+				});
+			}
+
+			if (form) {
+				form.addEventListener('submit', async (e) => {
+					e.preventDefault();
+					saveBtn.disabled = true;
+					statusMsg.textContent = 'Menyimpan project ke D1...';
+					statusMsg.className = 'status-msg info';
+
+					const techStr = (document.getElementById('proj-tech') as HTMLInputElement).value;
+					const techArr = techStr.split(',').map((t) => t.trim()).filter(Boolean);
+
+					const payload = {
+						title: titleInput.value.trim(),
+						slug: slugInput.value.trim(),
+						description: (document.getElementById('proj-desc') as HTMLTextAreaElement).value.trim(),
+						category: (document.getElementById('proj-category') as HTMLSelectElement).value,
+						featured: (document.getElementById('proj-featured') as HTMLSelectElement).value === '1',
+						tech_stack: techArr,
+						github_url: (document.getElementById('proj-github') as HTMLInputElement).value.trim() || null,
+						live_url: (document.getElementById('proj-live') as HTMLInputElement).value.trim() || null,
+					};
+
+					try {
+						const res = await fetch('/admin/api/projects', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify(payload),
+						});
+						const data = await res.json();
+						if (res.ok && data.success) {
+							statusMsg.textContent = '✓ Project berhasil disimpan ke D1!';
+							statusMsg.className = 'status-msg success';
+							setTimeout(() => {
+								window.location.href = '/projects';
+							}, 1200);
+						} else {
+							statusMsg.textContent = '✕ Gagal: ' + (data.error || 'Server error');
+							statusMsg.className = 'status-msg error';
+							saveBtn.disabled = false;
+						}
+					} catch (err) {
+						statusMsg.textContent = '✕ Kesalahan koneksi.';
+						statusMsg.className = 'status-msg error';
+						saveBtn.disabled = false;
+					}
+				});
+			}
+		</script>
+	</body>
+</html>
+
+<style>
+	.admin-body {
+		background: #080b12;
+		color: var(--text-primary);
+		min-height: 100vh;
+		padding: 2.5rem 1.5rem;
+	}
+	.editor-container {
+		max-width: 780px;
+		margin: 0 auto;
+	}
+	.editor-top {
+		margin-bottom: 2rem;
+	}
+	.back-link {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		display: inline-block;
+		margin-bottom: 0.5rem;
+	}
+	.page-title {
+		font-size: 1.8rem;
+		margin: 0 0 0.25rem 0;
+	}
+	.page-desc {
+		color: var(--text-secondary);
+		font-size: 0.92rem;
+		margin: 0;
+	}
+	.editor-form {
+		padding: 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.45rem;
+	}
+	.form-group label {
+		font-size: 0.88rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+	.input-field {
+		padding: 0.8rem 1rem;
+		border-radius: var(--radius-sm);
+		background: #0d121f;
+		border: 1px solid var(--border-subtle);
+		color: #ffffff;
+		font-size: 0.95rem;
+		outline: none;
+	}
+	.input-field:focus {
+		border-color: var(--primary);
+	}
+	.mono-field {
+		font-family: "JetBrains Mono", monospace;
+	}
+	.form-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+	.submit-btn {
+		margin-top: 0.5rem;
+		padding: 0.9rem;
+		font-size: 1rem;
+	}
+	.status-msg {
+		font-size: 0.88rem;
+		text-align: center;
+		min-height: 1.2rem;
+		margin: 0;
+	}
+	.status-msg.success { color: #34d399; }
+	.status-msg.error { color: #f87171; }
+	.status-msg.info { color: #93c5fd; }
+	@media (max-width: 600px) {
+		.form-row { grid-template-columns: 1fr; }
+	}
+</style>

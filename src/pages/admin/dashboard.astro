@@ -24,6 +24,9 @@ const seriesList = await getAllSeries(db);
 const writingGoal = await getWritingGoal(db);
 const goalPercent = Math.min(100, Math.round((writingGoal.completed_count / writingGoal.target_count) * 100));
 
+const publishedCount = posts.filter((p) => !p.status || p.status === 'PUBLISHED').length;
+const draftCount = posts.filter((p) => p.status === 'DRAFT').length;
+const scheduledCount = posts.filter((p) => p.status === 'SCHEDULED').length;
 const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 12431);
 ---
 
@@ -45,9 +48,9 @@ const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 12431);
 					<span class="pill pill-cyan">Content Command Center</span>
 				</div>
 				<div class="topbar-actions">
-					<a href="/admin/intelligence" class="btn btn-secondary top-btn">🧠 Content Intelligence</a>
-					<a href="/" target="_blank" class="btn btn-secondary top-btn">Lihat Web Publik ↗</a>
-					<a href="/admin/posts/new" class="btn btn-primary top-btn">+ Tulis Artikel Baru</a>
+					<a href="/admin/posts/new" class="btn btn-primary top-btn">+ New Post</a>
+					<a href="/admin/projects/new" class="btn btn-secondary top-btn">+ New Project</a>
+					<a href="/" target="_blank" class="btn btn-secondary top-btn">Web Publik ↗</a>
 				</div>
 			</div>
 		</header>
@@ -57,13 +60,18 @@ const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 12431);
 			<aside class="admin-sidebar">
 				<nav class="sidebar-nav">
 					<a href="/admin/dashboard" class="sidebar-link active">📊 Command Center</a>
-					<a href="/admin/intelligence" class="sidebar-link">🧠 Content Intelligence</a>
 					<a href="/admin/posts" class="sidebar-link">📝 Articles & Drafts</a>
+					<a href="/admin/intelligence" class="sidebar-link">🧠 Content Intelligence</a>
+					<a href="/admin/media" class="sidebar-link">📷 Media Library</a>
 					<a href="/admin/categories" class="sidebar-link">🏷️ Categories & Tags</a>
 					<a href="/admin/series" class="sidebar-link">📚 Content Series</a>
-					<a href="/devlog" target="_blank" class="sidebar-link">🚀 Public Devlog ↗</a>
-					<a href="/explore" target="_blank" class="sidebar-link">🗺️ Knowledge Map ↗</a>
-					<a href="/projects" target="_blank" class="sidebar-link">💼 Projects Showcase ↗</a>
+					<a href="/admin/redirects" class="sidebar-link">🔀 Redirect Manager</a>
+					<a href="/admin/analytics" class="sidebar-link">📈 Analytics Hub</a>
+					<a href="/admin/settings" class="sidebar-link">⚙️ Platform Settings</a>
+					<div class="nav-divider"></div>
+					<a href="/devlog" target="_blank" class="sidebar-link external">🚀 Public Devlog ↗</a>
+					<a href="/explore" target="_blank" class="sidebar-link external">🗺️ Knowledge Map ↗</a>
+					<a href="/projects" target="_blank" class="sidebar-link external">💼 Projects Catalog ↗</a>
 				</nav>
 
 				<div class="sidebar-footer">
@@ -78,10 +86,22 @@ const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 12431);
 				<div class="welcome-header">
 					<div>
 						<h1 class="welcome-title">Good morning, {AUTHOR_NAME} 👋</h1>
-						<p class="welcome-subtitle">Berikut ringkasan performa konten, metrik traffic, dan rekomendasi SEO hari ini.</p>
+						<p class="welcome-subtitle">Pusat kontrol operasional blog, pemantauan SEO, dan analitik performa konten.</p>
 					</div>
 					<div class="quick-date pill pill-neutral">
 						Cloudflare Edge Synced
+					</div>
+				</div>
+
+				<!-- Quick Actions Bar (PRD Section 1) -->
+				<div class="quick-actions-toolbar glass-card">
+					<span class="toolbar-label">⚡ Quick Actions:</span>
+					<div class="toolbar-buttons">
+						<a href="/admin/posts/new" class="btn btn-primary btn-sm">+ New Post</a>
+						<a href="/admin/projects/new" class="btn btn-secondary btn-sm">+ New Project</a>
+						<a href="/admin/media" class="btn btn-secondary btn-sm">📷 Upload Media</a>
+						<a href="/admin/series" class="btn btn-secondary btn-sm">📚 Manage Series</a>
+						<a href="/admin/redirects" class="btn btn-secondary btn-sm">🔀 New Redirect</a>
 					</div>
 				</div>
 
@@ -106,22 +126,27 @@ const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 12431);
 					</div>
 				</div>
 
-				<!-- Stats Overview Cards (PRD Section 29) -->
-				<div class="grid-4 stats-grid">
+				<!-- Stats Overview Cards (5-Cards: Total, Published, Draft, Scheduled, Views) -->
+				<div class="grid-5 stats-grid">
 					<div class="glass-card stat-card">
-						<span class="stat-label">Total Articles</span>
+						<span class="stat-label">Total Posts</span>
 						<span class="stat-value">{posts.length}</span>
-						<span class="stat-change text-emerald">● Published & Active</span>
+						<span class="stat-change text-cyan">All Articles</span>
 					</div>
 					<div class="glass-card stat-card">
-						<span class="stat-label">Categories</span>
-						<span class="stat-value">{categories.length}</span>
-						<span class="stat-change text-cyan">Cluster Pillars</span>
+						<span class="stat-label">Published</span>
+						<span class="stat-value text-emerald">{publishedCount}</span>
+						<span class="stat-change text-emerald">● Active Online</span>
 					</div>
 					<div class="glass-card stat-card">
-						<span class="stat-label">Active Series</span>
-						<span class="stat-value">{seriesList.length}</span>
-						<span class="stat-change text-violet">Roadmaps</span>
+						<span class="stat-label">Drafts</span>
+						<span class="stat-value text-amber">{draftCount}</span>
+						<span class="stat-change text-amber">In Progress</span>
+					</div>
+					<div class="glass-card stat-card">
+						<span class="stat-label">Scheduled</span>
+						<span class="stat-value text-violet">{scheduledCount}</span>
+						<span class="stat-change text-violet">Upcoming Queue</span>
 					</div>
 					<div class="glass-card stat-card">
 						<span class="stat-label">Total Views (D1)</span>
@@ -404,10 +429,51 @@ const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 12431);
 		line-height: 1.4;
 	}
 
-	.banner-btn {
-		white-space: nowrap;
-		padding: 0.75rem 1.25rem;
-		font-size: 0.9rem;
+	.nav-divider {
+		height: 1px;
+		background: var(--border-subtle);
+		margin: 0.5rem 0;
+	}
+
+	.sidebar-link.external {
+		color: var(--text-muted);
+		font-size: 0.85rem;
+	}
+
+	.quick-actions-toolbar {
+		padding: 1rem 1.5rem;
+		margin-bottom: 1.5rem;
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+		flex-wrap: wrap;
+		border-left: 3px solid var(--primary);
+	}
+
+	.toolbar-label {
+		font-size: 0.88rem;
+		font-weight: 700;
+		color: #ffffff;
+	}
+
+	.toolbar-buttons {
+		display: flex;
+		gap: 0.6rem;
+		flex-wrap: wrap;
+	}
+
+	.btn-sm {
+		padding: 0.45rem 0.85rem;
+		font-size: 0.82rem;
+	}
+
+	.text-amber { color: #f59e0b; }
+
+	.grid-5 {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+		gap: 1.25rem;
+		margin-bottom: 2.5rem;
 	}
 
 	.grid-4 {
