@@ -6,26 +6,47 @@ import { AUTHOR_NAME, AUTHOR_ROLE, AUTHOR_BIO, SITE_TITLE, SOCIAL_LINKS, TECH_CL
 
 const experiences = [
 	{
-		role: "Software Engineer & Cloud Architect",
-		company: "Freelance & Independent Research",
-		period: "2024 — Sekarang",
+		role: "Frontend Developer",
+		company: "PT Multi Karya Solusi",
+		period: "Sep 2024 — Sekarang",
 		description:
-			"Merancang dan mengimplementasikan aplikasi web berbasis Astro, Cloudflare Workers & D1, Docker microservices, serta API performa tinggi menggunakan TypeScript dan Go/Python.",
+			"Membangun ITOKIN Quality Control (QC) Mobile App dengan React Native, integrasi API real-time, Web App IRS Automated Social Media (AI & RPA), dan manajemen storage file dengan NextCloud.",
 	},
 	{
-		role: "Fullstack Web Developer",
-		company: "Web & Digital Solutions",
-		period: "2022 — 2024",
+		role: "Fullstack Developer",
+		company: "PT GUITEKNO TRESNA TELEKOMUNIKASI",
+		period: "Sep 2023 — Sep 2024",
 		description:
-			"Membangun dashboard internal, optimasi SEO technical, arsitektur database relasional, dan integrasi payment gateway serta auth pipeline.",
+			"Mengembangkan platform video sharing LahTube (Web, Android, iOS, TV Box), implementasi high-performance infinite scroll, Admin Market interface, dan standardisasi Docker Compose.",
+	},
+	{
+		role: "Backend Developer",
+		company: "PT. Tekno Solusi Nusantara",
+		period: "Sep 2023 — Des 2023",
+		description:
+			"Mengembangkan high-performance RESTful APIs dengan Golang, optimasi query MySQL/PostgreSQL (mengurangi latency hingga 30%), arsitektur microservices dengan gRPC, dan caching Redis.",
+	},
+	{
+		role: "Fullstack Developer",
+		company: "PT Visi Multimedia Aditama",
+		period: "Mei 2022 — Agu 2023",
+		description:
+			"Merancang Admin Tool kustom untuk manajemen konten dan situs, RESTful API dengan Golang, serta perbaikan integritas data pada PostgreSQL.",
+	},
+	{
+		role: "Backend Developer",
+		company: "RUN System",
+		period: "Mar 2021 — Mar 2022",
+		description:
+			"Mengembangkan aplikasi B2B Run Market dan solusi perkantoran digital E-Office, migrasi basis data, serta pemecahan masalah kritis sistem backend.",
 	},
 ];
 
 const technicalSkills = [
-	{ category: "Edge & Cloud", items: ["Cloudflare Workers", "Cloudflare D1 (SQLite)", "Cloudflare R2", "Hono", "Vercel"] },
-	{ category: "Frontend", items: ["Astro 5", "TypeScript", "React", "Next.js", "Tailwind CSS", "Vue.js"] },
-	{ category: "Backend & Systems", items: ["Node.js", "FastAPI (Python)", "Laravel (PHP)", "REST & GraphQL", "SQLite / PostgreSQL"] },
-	{ category: "DevOps & Tooling", items: ["Docker & Compose", "Linux (Ubuntu/Debian)", "Git & GitHub Actions", "Traefik", "Prometheus"] },
+	{ category: "Frontend & Mobile", items: ["React.js", "React Native", "Next.js", "Vue.js", "Inertia.js", "Tailwind CSS", "TypeScript", "ApexCharts", "Mapbox"] },
+	{ category: "Backend & Systems", items: ["Golang (Go)", "RESTful APIs", "gRPC", "Microservices", "PHP / Laravel", "CodeIgniter", "Node.js", "Go test"] },
+	{ category: "Databases & Storage", items: ["PostgreSQL", "MySQL", "Cloudflare D1 (SQLite)", "Redis Caching", "NextCloud", "Query Optimization"] },
+	{ category: "Cloud & DevOps", items: ["Docker & Compose", "Cloudflare Workers", "Cloudflare Pages", "Git (GitHub/GitLab)", "Linux (Ubuntu)", "Agile/Scrum"] },
 ];
 ---
 
@@ -34,7 +55,7 @@ const technicalSkills = [
 	<head>
 		<BaseHead
 			title={`About ${AUTHOR_NAME} — ${SITE_TITLE}`}
-			description={`Tentang ${AUTHOR_NAME}: ${AUTHOR_ROLE}. Pengalaman teknis, filosofi engineering, dan spesialisasi arsitektur cloud.`}
+			description={`Tentang ${AUTHOR_NAME}: ${AUTHOR_ROLE}. Pengalaman profesional, arsitektur teknis, dan portofolio Fullstack & Mobile.`}
 		/>
 	</head>
 	<body>
@@ -45,23 +66,30 @@ const technicalSkills = [
 				<!-- Hero Bio -->
 				<section class="bio-hero">
 					<div class="bio-avatar-badge">
-						<span class="avatar-initials">QW</span>
+						<span class="avatar-initials">IA</span>
 					</div>
 					<div class="bio-content">
-						<span class="pill pill-cyan mb-2">Developer Profile</span>
+						<span class="pill pill-cyan mb-2">Fullstack & Mobile Developer</span>
 						<h1 class="bio-title">Halo, saya <span class="gradient-text">{AUTHOR_NAME}</span></h1>
 						<p class="bio-subtitle">{AUTHOR_ROLE}</p>
 						<p class="bio-text">{AUTHOR_BIO}</p>
 
 						<div class="social-links-row">
-							<a href={SOCIAL_LINKS.github} target="_blank" rel="noopener" class="btn btn-primary">
+							<a href="/cv" class="btn btn-primary">
 								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+									<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+									<polyline points="14 2 14 8 20 8"></polyline>
+									<line x1="16" y1="13" x2="8" y2="13"></line>
+									<line x1="16" y1="17" x2="8" y2="17"></line>
+									<polyline points="10 9 9 9 8 9"></polyline>
 								</svg>
-								<span>GitHub</span>
+								<span>Buka & Cetak CV Lengkap &rarr;</span>
 							</a>
-							<a href={SOCIAL_LINKS.twitter} target="_blank" rel="noopener" class="btn btn-secondary">
-								<span>Twitter / X</span>
+							<a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener" class="btn btn-secondary">
+								<span>LinkedIn ↗</span>
+							</a>
+							<a href={SOCIAL_LINKS.github} target="_blank" rel="noopener" class="btn btn-secondary">
+								<span>GitHub ↗</span>
 							</a>
 							<a href={`mailto:${SOCIAL_LINKS.email}`} class="btn btn-secondary">
 								<span>Email Me</span>
@@ -77,14 +105,14 @@ const technicalSkills = [
 						"Tempat untuk mendokumentasikan apa yang saya pelajari, apa yang saya bangun, dan membangun personal brand melalui tulisan."
 					</blockquote>
 					<p>
-						Sebagai engineer, saya percaya bahwa pemahaman mendalam lahir dari proses membongkar sistem, mendokumentasikan setiap rintangan, dan menyajikan solusi secara ringkas kepada komunitas. Blog dan knowledge hub ini dibangun di atas infrastruktur serverless modern (Cloudflare Edge & D1) untuk menyatukan performa kilat dengan kemudahan publishing.
+						Sebagai engineer dengan rekam jejak dalam pengembangan web dan mobile (React, React Native, Golang), saya mendedikasikan platform ini untuk berbagi wawasan arsitektural seputar sistem modular, optimasi query database, edge computing (Cloudflare D1/Workers), dan containerisasi Docker.
 					</p>
 				</section>
 
 				<!-- Technical Skills Grid -->
 				<section class="skills-section">
 					<h2 class="section-title">Technical Skillset</h2>
-					<p class="section-subtitle">Teknologi dan tools yang saya gunakan sehari-hari dalam production & homelab.</p>
+					<p class="section-subtitle">Teknologi dan tools yang saya kuasai dalam production, enterprise applications, dan riset mandiri.</p>
 
 					<div class="grid-2 skills-grid">
 						{technicalSkills.map((cat) => (
@@ -102,7 +130,7 @@ const technicalSkills = [
 
 				<!-- Experience Timeline -->
 				<section class="timeline-section">
-					<h2 class="section-title">Pengalaman & Rekam Jejak</h2>
+					<h2 class="section-title">Pengalaman & Rekam Jejak Karir</h2>
 					<div class="timeline">
 						{experiences.map((exp) => (
 							<div class="timeline-item">

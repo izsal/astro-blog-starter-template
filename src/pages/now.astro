@@ -1,0 +1,191 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { AUTHOR_NAME, SITE_TITLE } from '../consts';
+
+const lastUpdated = 'September 2026';
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`What I'm Doing Now — ${AUTHOR_NAME}`}
+			description="Snapshot aktivitas terkini: proyek yang sedang dibangun, teknologi yang sedang dipelajari, dan topik tulisan mendatang."
+		/>
+	</head>
+	<body>
+		<Header />
+
+		<main class="section">
+			<div class="container now-container">
+				<div class="page-header">
+					<div class="now-badge">
+						<span class="live-pulse"></span>
+						<span>Last Updated: {lastUpdated}</span>
+					</div>
+					<h1 class="page-title">What I'm Doing Now</h1>
+					<p class="page-lead">
+						Ini adalah halaman <a href="https://nownownow.com/about" target="_blank" rel="noopener">/now</a> — snapshot publik tentang fokus, proyek yang sedang saya bangun, dan hal-hal yang menyita rasa ingin tahu saya saat ini.
+					</p>
+				</div>
+
+				<div class="now-sections">
+					<!-- 1. Currently Building -->
+					<div class="glass-card now-card">
+						<div class="now-card-header">
+							<span class="now-icon">🛠️</span>
+							<h2>Currently Building</h2>
+						</div>
+						<ul class="now-list">
+							<li>
+								<strong>Personal Knowledge Hub & Digital Garden:</strong> Mengoptimasi sistem blog berbasis Astro 5, Cloudflare D1 SQLite, dan edge caching sub-50ms.
+							</li>
+							<li>
+								<strong>Homelab Microservices:</strong> Menata ulang infrastruktur container server pribadi dengan Traefik automated SSL reverse proxy dan node exporter monitoring.
+							</li>
+							<li>
+								<strong>Cloudflare Edge APIs:</strong> Merancang worker microservices untuk ingestion dan analytic streaming.
+							</li>
+						</ul>
+					</div>
+
+					<!-- 2. Currently Learning -->
+					<div class="glass-card now-card">
+						<div class="now-card-header">
+							<span class="now-icon">📖</span>
+							<h2>Currently Learning</h2>
+						</div>
+						<ul class="now-list">
+							<li>
+								<strong>Distributed Systems & SQLite WAL:</strong> Mempelajari konsistensi read/write pada database replika terdistribusi (seperti arsitektur di balik Cloudflare D1).
+							</li>
+							<li>
+								<strong>Linux Kernel Performance Tuning:</strong> Eksplorasi cgroups, systemd tuning, dan network packet optimization.
+							</li>
+							<li>
+								<strong>Advanced TypeScript Type Gymnastics:</strong> Membangun library types yang fleksibel dan inferensi otomatis schema.
+							</li>
+						</ul>
+					</div>
+
+					<!-- 3. Currently Writing -->
+					<div class="glass-card now-card">
+						<div class="now-card-header">
+							<span class="now-icon">✍️</span>
+							<h2>Currently Writing</h2>
+						</div>
+						<ul class="now-list">
+							<li>
+								<strong>Series Astro + Cloudflare Mastery:</strong> Tutorial langkah demi langkah deploy blog fullstack ke cloud edge.
+							</li>
+							<li>
+								<strong>Docker for Developers:</strong> Panduan praktis containerization yang efisien tanpa bloat image.
+							</li>
+							<li>
+								<strong>Internal Linking Strategy:</strong> Membahas bagaimana menghubungkan artikel untuk meningkatkan SEO organik.
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</main>
+
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.now-container {
+		max-width: 780px;
+	}
+
+	.page-header {
+		margin-bottom: 3.5rem;
+	}
+
+	.now-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.35rem 0.85rem;
+		background: rgba(16, 185, 129, 0.12);
+		border: 1px solid rgba(16, 185, 129, 0.25);
+		border-radius: var(--radius-full);
+		font-size: 0.82rem;
+		color: #34d399;
+		margin-bottom: 1.25rem;
+	}
+
+	.live-pulse {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #10b981;
+		box-shadow: 0 0 10px #10b981;
+	}
+
+	.page-title {
+		margin-bottom: 0.75rem;
+	}
+
+	.page-lead {
+		font-size: 1.15rem;
+		color: var(--text-secondary);
+		line-height: 1.7;
+	}
+
+	.now-sections {
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+		margin-bottom: 4rem;
+	}
+
+	.now-card {
+		padding: 2rem;
+	}
+
+	.now-card-header {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 1.25rem;
+	}
+
+	.now-icon {
+		font-size: 1.6rem;
+	}
+
+	.now-card-header h2 {
+		font-size: 1.35rem;
+		margin: 0;
+	}
+
+	.now-list {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.now-list li {
+		position: relative;
+		padding-left: 1.5rem;
+		color: var(--text-secondary);
+		line-height: 1.6;
+	}
+
+	.now-list li::before {
+		content: "→";
+		position: absolute;
+		left: 0;
+		color: var(--primary-light);
+		font-weight: 700;
+	}
+
+	.now-list strong {
+		color: #ffffff;
+	}
+</style>

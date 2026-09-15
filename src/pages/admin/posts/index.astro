@@ -1,0 +1,181 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import { SITE_TITLE } from '../../../consts';
+import { verifyAdminSession } from '../../../lib/admin-auth';
+import { getD1Database } from '../../../lib/db';
+import { getUnifiedPosts } from '../../../lib/posts';
+
+export const prerender = false;
+
+const cookie = Astro.request.headers.get('cookie');
+if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
+	return Astro.redirect('/admin');
+}
+
+const db = getD1Database(Astro.locals);
+const posts = await getUnifiedPosts(db);
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead title={`Manage Posts — Admin ${SITE_TITLE}`} description="Admin post management." />
+	</head>
+	<body class="admin-body">
+		<div class="admin-container">
+			<div class="page-top">
+				<div>
+					<a href="/admin/dashboard" class="back-link">&larr; Kembali ke Command Center</a>
+					<h1 class="page-title">Articles & Content Management</h1>
+					<p class="page-subtitle">Daftar artikel terpublikasi dan draft di database Cloudflare D1 & Content Collections.</p>
+				</div>
+				<div class="top-actions">
+					<a href="/admin/intelligence" class="btn btn-secondary">🧠 Content Intelligence</a>
+					<a href="/admin/posts/new" class="btn btn-primary">+ Tulis Artikel Baru</a>
+				</div>
+			</div>
+
+			<div class="glass-card posts-table-card">
+				<table class="admin-table">
+					<thead>
+						<tr>
+							<th>Judul Artikel</th>
+							<th>Kategori</th>
+							<th>Tanggal</th>
+							<th>Sumber</th>
+							<th>Views</th>
+							<th>Aksi</th>
+						</tr>
+					</thead>
+					<tbody>
+						{posts.map((post) => (
+							<tr>
+								<td>
+									<a href={`/blog/${post.slug}/`} target="_blank" class="post-row-title">
+										{post.title}
+									</a>
+								</td>
+								<td>
+									<span class="pill pill-cyan">{post.category || 'Development'}</span>
+								</td>
+								<td class="date-cell">
+									{new Date(post.published_at).toLocaleDateString('id-ID')}
+								</td>
+								<td>
+									<span class:list={['pill', post.is_d1 ? 'pill-emerald' : 'pill-neutral']}>
+										{post.is_d1 ? 'D1 Database' : 'Markdown'}
+									</span>
+								</td>
+								<td class="views-cell">
+									{post.views || 0}
+								</td>
+								<td>
+									<a href={`/blog/${post.slug}/`} target="_blank" class="table-link">Preview ↗</a>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</body>
+</html>
+
+<style>
+	.admin-body {
+		background: #080b12;
+		color: var(--text-primary);
+		min-height: 100vh;
+		padding: 2.5rem 1.5rem;
+	}
+
+	.admin-container {
+		max-width: 1050px;
+		margin: 0 auto;
+	}
+
+	.page-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 2rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+
+	.top-actions {
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+
+	.back-link {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		margin-bottom: 0.5rem;
+		display: inline-block;
+	}
+
+	.back-link:hover {
+		color: var(--primary-light);
+	}
+
+	.page-title {
+		font-size: 1.75rem;
+		margin-bottom: 0.25rem;
+	}
+
+	.page-subtitle {
+		font-size: 0.92rem;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+
+	.posts-table-card {
+		padding: 1.5rem;
+		overflow-x: auto;
+	}
+
+	.admin-table {
+		width: 100%;
+		border-collapse: collapse;
+		text-align: left;
+		font-size: 0.9rem;
+	}
+
+	.admin-table th {
+		padding: 0.85rem 1rem;
+		color: var(--text-muted);
+		border-bottom: 1px solid var(--border-subtle);
+		font-weight: 600;
+		font-size: 0.82rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.admin-table td {
+		padding: 1rem;
+		border-bottom: 1px solid var(--border-subtle);
+		color: var(--text-secondary);
+	}
+
+	.post-row-title {
+		color: #ffffff;
+		font-weight: 600;
+	}
+
+	.post-row-title:hover {
+		color: var(--primary-light);
+	}
+
+	.date-cell, .views-cell {
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.85rem;
+	}
+
+	.table-link {
+		color: var(--primary-light);
+		font-weight: 500;
+	}
+</style>

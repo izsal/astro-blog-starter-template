@@ -1,0 +1,144 @@
+---
+interface Props {
+	title: string;
+	url?: string;
+}
+
+const { title, url = '' } = Astro.props;
+---
+
+<div class="share-bar-container" data-title={title} data-url={url}>
+	<span class="share-label">Share article:</span>
+
+	<button type="button" class="share-btn copy-link-btn" id="copy-link-btn" title="Salin tautan artikel">
+		<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+			<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+		</svg>
+		<span id="copy-link-text">Copy Link</span>
+	</button>
+
+	<a
+		id="twitter-share-btn"
+		href="#"
+		target="_blank"
+		rel="noopener noreferrer"
+		class="share-btn"
+		title="Bagikan ke Twitter / X"
+	>
+		<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+			<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+		</svg>
+		<span>Twitter</span>
+	</a>
+
+	<a
+		id="linkedin-share-btn"
+		href="#"
+		target="_blank"
+		rel="noopener noreferrer"
+		class="share-btn"
+		title="Bagikan ke LinkedIn"
+	>
+		<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+			<path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.25c-.9 0-1.63.73-1.63 1.63s.73 1.63 1.63 1.63 1.63-.73 1.63-1.63-.73-1.63-1.63-1.63Z"></path>
+		</svg>
+		<span>LinkedIn</span>
+	</a>
+</div>
+
+<script>
+	function initShareBar() {
+		const container = document.querySelector<HTMLElement>('.share-bar-container');
+		if (!container) return;
+
+		const currentUrl = container.dataset.url || window.location.href;
+		const articleTitle = container.dataset.title || document.title;
+
+		// Setup Twitter Share URL
+		const twBtn = container.querySelector<HTMLAnchorElement>('#twitter-share-btn');
+		if (twBtn) {
+			twBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(articleTitle)}&url=${encodeURIComponent(currentUrl)}`;
+		}
+
+		// Setup LinkedIn Share URL
+		const liBtn = container.querySelector<HTMLAnchorElement>('#linkedin-share-btn');
+		if (liBtn) {
+			liBtn.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`;
+		}
+
+		// Setup Copy Link with Toast Feedback
+		const copyBtn = container.querySelector<HTMLButtonElement>('#copy-link-btn');
+		const copyText = container.querySelector<HTMLElement>('#copy-link-text');
+
+		if (copyBtn && copyText) {
+			copyBtn.addEventListener('click', async () => {
+				try {
+					await navigator.clipboard.writeText(currentUrl);
+					copyBtn.classList.add('copied');
+					copyText.textContent = '✓ Link copied!';
+					setTimeout(() => {
+						copyBtn.classList.remove('copied');
+						copyText.textContent = 'Copy Link';
+					}, 2200);
+				} catch (e) {
+					console.error('Failed to copy article URL:', e);
+				}
+			});
+		}
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initShareBar);
+	} else {
+		initShareBar();
+	}
+</script>
+
+<style>
+	.share-bar-container {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.6rem;
+		margin: 2rem 0;
+		padding: 0.75rem 1.25rem;
+		border-radius: var(--radius-full);
+		background: rgba(255, 255, 255, 0.03);
+		border: 1px solid var(--border-subtle);
+		font-size: 0.82rem;
+	}
+
+	.share-label {
+		color: var(--text-muted);
+		font-weight: 500;
+		margin-right: 0.25rem;
+	}
+
+	.share-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.35rem 0.75rem;
+		border-radius: var(--radius-full);
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid var(--border-subtle);
+		color: var(--text-secondary);
+		cursor: pointer;
+		text-decoration: none;
+		font-size: 0.8rem;
+		transition: var(--transition-smooth);
+	}
+
+	.share-btn:hover {
+		background: rgba(99, 102, 241, 0.15);
+		color: #ffffff;
+		border-color: var(--border-highlight);
+	}
+
+	.copy-link-btn.copied {
+		background: rgba(16, 185, 129, 0.2);
+		color: #34d399;
+		border-color: rgba(16, 185, 129, 0.5);
+	}
+</style>

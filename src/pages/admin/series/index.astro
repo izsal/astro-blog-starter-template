@@ -1,0 +1,192 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import { SITE_TITLE } from '../../../consts';
+import { verifyAdminSession } from '../../../lib/admin-auth';
+import { getD1Database } from '../../../lib/db';
+import { getAllSeries } from '../../../lib/series';
+
+export const prerender = false;
+
+const cookie = Astro.request.headers.get('cookie');
+if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
+	return Astro.redirect('/admin');
+}
+
+const db = getD1Database(Astro.locals);
+const seriesList = await getAllSeries(db);
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead title={`Content Series — Admin ${SITE_TITLE}`} description="Kelola alur kurikulum series." />
+	</head>
+	<body class="admin-body">
+		<div class="admin-container">
+			<div class="page-top">
+				<div>
+					<a href="/admin/dashboard" class="back-link">&larr; Kembali ke Command Center</a>
+					<h1 class="page-title">Content Series Management (PRD Section 13)</h1>
+					<p class="page-subtitle">Kelola alur seri artikel berurutan untuk memaksimalkan dwell time pembaca.</p>
+				</div>
+				<a href="/series" target="_blank" class="btn btn-secondary">Lihat Web Series ↗</a>
+			</div>
+
+			<div class="series-cards-stack">
+				{seriesList.map((series) => (
+					<div class="glass-card series-manage-card">
+						<div class="card-header">
+							<div>
+								<span class="pill pill-emerald">{series.posts.length} Parts</span>
+								<h2 class="series-title">{series.title}</h2>
+								<p class="series-slug">Slug: <code>{series.slug}</code></p>
+							</div>
+							<a href={`/series/${series.slug}/`} target="_blank" class="btn btn-secondary preview-btn">
+								Preview Series ↗
+							</a>
+						</div>
+
+						<p class="series-desc">{series.description}</p>
+
+						<div class="series-posts-list">
+							<h3 class="list-heading">Urutan Part:</h3>
+							<div class="parts-grid">
+								{series.posts.map((p) => (
+									<div class="part-item">
+										<span class="part-badge">Part {p.position}</span>
+										<a href={`/blog/${p.slug}/`} target="_blank" class="part-title">
+											{p.title}
+										</a>
+									</div>
+								))}
+							</div>
+						</div>
+					</div>
+				))}
+			</div>
+		</div>
+	</body>
+</html>
+
+<style>
+	.admin-body {
+		background: #080b12;
+		color: var(--text-primary);
+		min-height: 100vh;
+		padding: 2.5rem 1.5rem;
+	}
+
+	.admin-container {
+		max-width: 950px;
+		margin: 0 auto;
+	}
+
+	.page-top {
+		margin-bottom: 2rem;
+	}
+
+	.back-link {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		display: inline-block;
+		margin-bottom: 0.5rem;
+	}
+
+	.page-title {
+		font-size: 1.75rem;
+		margin-bottom: 0.25rem;
+	}
+
+	.page-subtitle {
+		font-size: 0.92rem;
+		color: var(--text-secondary);
+	}
+
+	.series-cards-stack {
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+	}
+
+	.series-manage-card {
+		padding: 2rem;
+	}
+
+	.card-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 1rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+
+	.series-title {
+		font-size: 1.35rem;
+		margin: 0.4rem 0 0.2rem;
+	}
+
+	.series-slug code {
+		color: var(--primary-light);
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.82rem;
+	}
+
+	.preview-btn {
+		padding: 0.5rem 1rem;
+		font-size: 0.85rem;
+	}
+
+	.series-desc {
+		font-size: 0.92rem;
+		color: var(--text-secondary);
+		margin-bottom: 1.5rem;
+	}
+
+	.series-posts-list {
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--border-subtle);
+	}
+
+	.list-heading {
+		font-size: 0.9rem;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin-bottom: 0.85rem;
+	}
+
+	.parts-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	}
+
+	.part-item {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.6rem 0.85rem;
+		border-radius: var(--radius-sm);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+	}
+
+	.part-badge {
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.75rem;
+		color: var(--primary-light);
+		background: rgba(99, 102, 241, 0.12);
+		padding: 0.2rem 0.5rem;
+		border-radius: var(--radius-full);
+	}
+
+	.part-title {
+		color: #ffffff;
+		font-size: 0.9rem;
+	}
+
+	.part-title:hover {
+		color: var(--primary-light);
+	}
+</style>

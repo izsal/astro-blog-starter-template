@@ -1,0 +1,198 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import { SITE_TITLE } from '../../../consts';
+import { verifyAdminSession } from '../../../lib/admin-auth';
+import { getD1Database } from '../../../lib/db';
+import { getCategories } from '../../../lib/categories';
+import { getTags } from '../../../lib/tags';
+
+export const prerender = false;
+
+const cookie = Astro.request.headers.get('cookie');
+if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
+	return Astro.redirect('/admin');
+}
+
+const db = getD1Database(Astro.locals);
+const categories = await getCategories(db);
+const tags = await getTags(db);
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead title={`Categories & Tags — Admin ${SITE_TITLE}`} description="Kelola kategori dan tag usage." />
+	</head>
+	<body class="admin-body">
+		<div class="admin-container">
+			<div class="page-top">
+				<div>
+					<a href="/admin/dashboard" class="back-link">&larr; Kembali ke Command Center</a>
+					<h1 class="page-title">Categories & Tag Usage (PRD Section 14 & 15)</h1>
+					<p class="page-subtitle">Struktur taksonomi konten untuk content cluster dan topical authority.</p>
+				</div>
+			</div>
+
+			<div class="tax-grid">
+				<!-- Categories Table -->
+				<div class="glass-card tax-card">
+					<div class="tax-header">
+						<h2>Categories ({categories.length})</h2>
+						<span class="pill pill-cyan">Main Clusters</span>
+					</div>
+					<table class="tax-table">
+						<thead>
+							<tr>
+								<th>Nama Kategori</th>
+								<th>Slug</th>
+								<th>Deskripsi</th>
+								<th>Articles</th>
+							</tr>
+						</thead>
+						<tbody>
+							{categories.map((cat) => (
+								<tr>
+									<td class="name-cell">{cat.name}</td>
+									<td class="slug-cell"><code>{cat.slug}</code></td>
+									<td class="desc-cell">{cat.description || '-'}</td>
+									<td class="count-cell">
+										<span class="pill pill-emerald">{cat.post_count || 0}</span>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+
+				<!-- Tag Usage Table (PRD Section 15 Tag Usage) -->
+				<div class="glass-card tax-card">
+					<div class="tax-header">
+						<h2>Tag Usage ({tags.length})</h2>
+						<span class="pill pill-emerald">Usage Tracking</span>
+					</div>
+					<table class="tax-table">
+						<thead>
+							<tr>
+								<th>Tag</th>
+								<th>Slug</th>
+								<th>Total Penggunaan</th>
+							</tr>
+						</thead>
+						<tbody>
+							{tags.map((tag) => (
+								<tr>
+									<td class="name-cell">#{tag.name}</td>
+									<td class="slug-cell"><code>{tag.slug}</code></td>
+									<td class="count-cell">
+										<span class="pill pill-cyan">{tag.usage_count || 0} posts</span>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+
+<style>
+	.admin-body {
+		background: #080b12;
+		color: var(--text-primary);
+		min-height: 100vh;
+		padding: 2.5rem 1.5rem;
+	}
+
+	.admin-container {
+		max-width: 1050px;
+		margin: 0 auto;
+	}
+
+	.page-top {
+		margin-bottom: 2rem;
+	}
+
+	.back-link {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		display: inline-block;
+		margin-bottom: 0.5rem;
+	}
+
+	.page-title {
+		font-size: 1.75rem;
+		margin-bottom: 0.25rem;
+	}
+
+	.page-subtitle {
+		font-size: 0.92rem;
+		color: var(--text-secondary);
+	}
+
+	.tax-grid {
+		display: grid;
+		grid-template-columns: 1.2fr 1fr;
+		gap: 2rem;
+	}
+
+	.tax-card {
+		padding: 1.75rem;
+	}
+
+	.tax-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1.5rem;
+	}
+
+	.tax-header h2 {
+		font-size: 1.25rem;
+		margin: 0;
+	}
+
+	.tax-table {
+		width: 100%;
+		border-collapse: collapse;
+		text-align: left;
+		font-size: 0.9rem;
+	}
+
+	.tax-table th {
+		padding: 0.75rem 0.75rem;
+		color: var(--text-muted);
+		border-bottom: 1px solid var(--border-subtle);
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.tax-table td {
+		padding: 0.85rem 0.75rem;
+		border-bottom: 1px solid var(--border-subtle);
+		color: var(--text-secondary);
+	}
+
+	.name-cell {
+		color: #ffffff;
+		font-weight: 600;
+	}
+
+	.slug-cell code {
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.8rem;
+		color: var(--primary-light);
+	}
+
+	.desc-cell {
+		font-size: 0.82rem;
+		line-height: 1.4;
+	}
+
+	@media (max-width: 860px) {
+		.tax-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

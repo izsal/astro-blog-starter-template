@@ -5,8 +5,15 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import D1PostStats from '../components/D1PostStats.astro';
-import { AUTHOR_NAME, AUTHOR_ROLE, AUTHOR_BIO, SOCIAL_LINKS } from '../consts';
-import { getCollection } from 'astro:content';
+import ReadingProgress from '../components/ReadingProgress.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import CodeBlockEnhancer from '../components/CodeBlockEnhancer.astro';
+import ArticleShareBar from '../components/ArticleShareBar.astro';
+import { AUTHOR_NAME, AUTHOR_ROLE, AUTHOR_BIO, SOCIAL_LINKS, SITE_URL } from '../consts';
+import { getD1Database, getProjects } from '../lib/db';
+import { getSeriesForPost } from '../lib/series';
+import { getUnifiedPosts, getRelatedArticles, calculateReadingTime } from '../lib/posts';
+import { generateArticleJsonLd } from '../lib/seo';
 
 interface Props extends CollectionEntry<'blog'>['data'] {
 	slug?: string;
@@ -14,20 +21,38 @@ interface Props extends CollectionEntry<'blog'>['data'] {
 
 const { title, description, pubDate, updatedDate, heroImage, slug = '' } = Astro.props;
 
-// Fetch other posts for internal linking (Traffic Strategy)
-const allPosts = await getCollection('blog');
-const relatedPosts = allPosts
-	.filter((p) => p.id !== slug)
-	.slice(0, 2);
+const db = getD1Database(Astro.locals);
+const seriesInfo = await getSeriesForPost(db, slug);
+const allPosts = await getUnifiedPosts(db);
+const relatedPosts = await getRelatedArticles(allPosts, slug, 'Development', ['Astro', 'Cloudflare']);
+const readingTime = calculateReadingTime(description);
+
+// PRD Section 23: Bi-directional Project link
+const allProjects = await getProjects(db, true);
+const relatedProject = allProjects[0] || null;
+
+const articleUrl = new URL(Astro.url.pathname, Astro.site || SITE_URL).toString();
+const jsonLd = generateArticleJsonLd({
+	title,
+	description,
+	url: articleUrl,
+	pubDate: pubDate.toISOString(),
+	updatedDate: updatedDate?.toISOString(),
+	heroImage,
+});
 ---
 
 <!doctype html>
 <html lang="id">
 	<head>
 		<BaseHead title={`${title} — ${AUTHOR_NAME}`} description={description} image={heroImage} />
+		<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 	</head>
 
 	<body>
+		<!-- Reading Progress Bar -->
+		<ReadingProgress />
+
 		<Header />
 
 		<main class="post-layout section">
@@ -35,13 +60,15 @@ const relatedPosts = allPosts
 				<!-- Article Header -->
 				<header class="article-header">
 					<div class="article-meta-top">
-						<span class="pill pill-cyan">Architecture & Tutorial</span>
+						<span class="pill pill-cyan">Architecture & Guide</span>
 						<FormattedDate date={pubDate} />
 						{updatedDate && (
 							<span class="updated-badge">
 								(Updated <FormattedDate date={updatedDate} />)
 							</span>
 						)}
+						<span>•</span>
+						<span class="pill pill-neutral">{readingTime} min read</span>
 					</div>
 
 					<h1 class="article-title">{title}</h1>
@@ -51,7 +78,45 @@ const relatedPosts = allPosts
 					<div class="stats-row">
 						{slug && <D1PostStats slug={slug} />}
 					</div>
+
+					<!-- Article Share & Copy Link Bar -->
+					<ArticleShareBar title={title} url={articleUrl} />
 				</header>
+
+				<!-- Series Box (PRD Section 13 Content Series) -->
+				{seriesInfo && (
+					<div class="series-nav-box glass-card">
+						<div class="series-nav-header">
+							<span class="pill pill-emerald">Content Series</span>
+							<h3 class="series-nav-title">
+								<a href={`/series/${seriesInfo.series.slug}/`}>{seriesInfo.series.title}</a>
+							</h3>
+						</div>
+						<p class="series-nav-desc">{seriesInfo.series.description}</p>
+						<div class="series-parts-checklist">
+							{seriesInfo.series.posts.map((part) => {
+								const isCurrent = part.slug === slug;
+								const isPast = part.position < seriesInfo.currentPosition;
+								return (
+									<div class:list={['series-part-row', { active: isCurrent, completed: isPast }]}>
+										<span class="part-status-icon">
+											{isCurrent ? '●' : isPast ? '✓' : '○'}
+										</span>
+										<span class="part-pos">Part {part.position}:</span>
+										{isCurrent ? (
+											<span class="part-current-title">{part.title} (Sedang Dibaca)</span>
+										) : (
+											<a href={`/blog/${part.slug}/`} class="part-link">{part.title}</a>
+										)}
+									</div>
+								);
+							})}
+						</div>
+					</div>
+				)}
+
+				<!-- Dynamic Table of Contents -->
+				<TableOfContents />
 
 				<!-- Hero Image Banner -->
 				{heroImage && (
@@ -60,10 +125,35 @@ const relatedPosts = allPosts
 					</div>
 				)}
 
-				<!-- Article Body -->
+				<!-- Article Body with CodeBlockEnhancer -->
 				<article class="prose article-body">
 					<slot />
 				</article>
+
+				<CodeBlockEnhancer />
+
+				<!-- PRD Section 23: Developer Portfolio Cross-Integration -->
+				{relatedProject && (
+					<div class="related-project-card glass-card">
+						<div class="project-card-badge">
+							<span class="pill pill-cyan">Related Engineering Project</span>
+						</div>
+						<div class="project-info">
+							<h3 class="project-card-title">
+								<a href={`/projects/${relatedProject.slug}/`}>{relatedProject.title}</a>
+							</h3>
+							<p class="project-card-desc">{relatedProject.description}</p>
+							<div class="project-tech-row">
+								{relatedProject.tech_stack.map((t) => (
+									<span class="pill pill-neutral">{t}</span>
+								))}
+							</div>
+						</div>
+						<a href={`/projects/${relatedProject.slug}/`} class="btn btn-secondary project-view-btn">
+							Lihat Project &rarr;
+						</a>
+					</div>
+				)}
 
 				<!-- Author Bio Box (PRD Goal 1 & Secondary Goal Recruiter) -->
 				<div class="author-box glass-card">
@@ -80,19 +170,22 @@ const relatedPosts = allPosts
 					</div>
 				</div>
 
-				<!-- Internal Links / Content Cluster Funnel (PRD Section 5 Traffic Strategy) -->
+				<!-- Internal Links / Content Cluster Funnel (PRD Section 12 Related Articles) -->
 				<section class="related-section">
-					<h3 class="related-title">Artikel & Panduan Terkait</h3>
+					<h3 class="related-title">Artikel Terkait (Related Articles)</h3>
 					<div class="grid-2">
 						{relatedPosts.map((related) => (
-							<a href={`/blog/${related.id}/`} class="post-card">
+							<a href={`/blog/${related.slug}/`} class="post-card">
 								<div class="post-card-meta">
-									<FormattedDate date={related.data.pubDate} />
+									<span>{new Date(related.published_at).toLocaleDateString('id-ID')}</span>
+									<span>•</span>
+									<span class="reading-time">{related.reading_time} min read</span>
 								</div>
-								<h4 class="post-card-title">{related.data.title}</h4>
-								<p class="post-card-desc">{related.data.description}</p>
+								<h4 class="post-card-title">{related.title}</h4>
+								<p class="post-card-desc">{related.excerpt}</p>
 								<div class="post-card-footer">
 									<span class="read-more-text">Lanjut Membaca &rarr;</span>
+									<span class="pill pill-neutral">{related.category}</span>
 								</div>
 							</a>
 						))}
@@ -111,7 +204,7 @@ const relatedPosts = allPosts
 	}
 
 	.article-header {
-		margin-bottom: 2.5rem;
+		margin-bottom: 2rem;
 		text-align: left;
 	}
 
@@ -153,6 +246,94 @@ const relatedPosts = allPosts
 		border-top: 1px solid var(--border-subtle);
 	}
 
+	/* Series Nav Box (PRD Section 13) */
+	.series-nav-box {
+		padding: 1.5rem;
+		margin: 2rem 0;
+		border-left: 4px solid #10b981;
+		background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%), var(--bg-card);
+	}
+
+	.series-nav-header {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 0.4rem;
+	}
+
+	.series-nav-title {
+		font-size: 1.2rem;
+		margin: 0;
+	}
+
+	.series-nav-title a {
+		color: #ffffff;
+	}
+
+	.series-nav-title a:hover {
+		color: #34d399;
+	}
+
+	.series-nav-desc {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		margin-bottom: 1rem;
+	}
+
+	.series-parts-checklist {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--border-subtle);
+	}
+
+	.series-part-row {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		font-size: 0.88rem;
+		color: var(--text-secondary);
+	}
+
+	.part-status-icon {
+		font-family: "JetBrains Mono", monospace;
+		color: var(--text-muted);
+		width: 14px;
+	}
+
+	.series-part-row.completed .part-status-icon {
+		color: #10b981;
+		font-weight: 700;
+	}
+
+	.series-part-row.active {
+		color: #ffffff;
+		font-weight: 600;
+	}
+
+	.series-part-row.active .part-status-icon {
+		color: #6366f1;
+	}
+
+	.part-pos {
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.8rem;
+		color: var(--text-muted);
+	}
+
+	.part-current-title {
+		color: #ffffff;
+	}
+
+	.part-link {
+		color: var(--text-secondary);
+	}
+
+	.part-link:hover {
+		color: var(--primary-light);
+	}
+
 	.hero-image-wrapper {
 		margin: 2rem 0 3rem;
 		border-radius: var(--radius-md);
@@ -169,7 +350,58 @@ const relatedPosts = allPosts
 	}
 
 	.article-body {
-		margin-bottom: 4rem;
+		margin-bottom: 3.5rem;
+	}
+
+	/* Related Project Card (PRD Section 23) */
+	.related-project-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1.5rem;
+		padding: 1.75rem 2rem;
+		margin-bottom: 3.5rem;
+		border-left: 4px solid var(--primary);
+		flex-wrap: wrap;
+	}
+
+	.project-card-badge {
+		width: 100%;
+		margin-bottom: 0.25rem;
+	}
+
+	.project-info {
+		flex: 1;
+		min-width: 260px;
+	}
+
+	.project-card-title {
+		font-size: 1.25rem;
+		margin-bottom: 0.35rem;
+	}
+
+	.project-card-title a {
+		color: #ffffff;
+	}
+
+	.project-card-title a:hover {
+		color: var(--primary-light);
+	}
+
+	.project-card-desc {
+		font-size: 0.92rem;
+		color: var(--text-secondary);
+		margin-bottom: 0.75rem;
+	}
+
+	.project-tech-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+
+	.project-view-btn {
+		white-space: nowrap;
 	}
 
 	.author-box {
@@ -231,7 +463,7 @@ const relatedPosts = allPosts
 		margin-bottom: 1.5rem;
 	}
 
-	@media (max-width: 640px) {
+	@media (max-width: 680px) {
 		.author-box {
 			flex-direction: column;
 			text-align: center;
@@ -241,6 +473,15 @@ const relatedPosts = allPosts
 			justify-content: center;
 			flex-direction: column;
 			gap: 0.5rem;
+		}
+
+		.related-project-card {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.project-view-btn {
+			width: 100%;
 		}
 	}
 </style>

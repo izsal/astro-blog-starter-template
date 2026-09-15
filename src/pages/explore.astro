@@ -1,0 +1,330 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { AUTHOR_NAME, SITE_TITLE } from '../consts';
+import { getD1Database } from '../lib/db';
+import { getCategories } from '../lib/categories';
+import { getUnifiedPosts } from '../lib/posts';
+import { getAllSeries } from '../lib/series';
+
+const db = getD1Database(Astro.locals);
+const categories = await getCategories(db);
+const posts = await getUnifiedPosts(db);
+const seriesList = await getAllSeries(db);
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`Visual Knowledge Architecture & Explore — ${AUTHOR_NAME}`}
+			description="Peta visual hierarki pengetahuan dan pohon topik technical writing di qblog."
+		/>
+	</head>
+	<body>
+		<Header />
+
+		<main class="section">
+			<div class="container explore-container">
+				<div class="page-header">
+					<span class="pill pill-cyan mb-2">Knowledge Graph</span>
+					<h1 class="page-title">Explore Visual Knowledge Map</h1>
+					<p class="page-lead">
+						Peta navigasi terstruktur yang memperlihatkan bagaimana setiap pilar arsitektur software, cluster teknologi, dan seri artikel saling terhubung membentuk satu ekosistem.
+					</p>
+				</div>
+
+				<!-- Visual Tree Architecture -->
+				<div class="tree-root glass-card">
+					<div class="root-node">
+						<span class="root-badge">HUB</span>
+						<h2>Personal Knowledge & Architecture Core</h2>
+						<p>qblog.qwarts.my.id</p>
+					</div>
+
+					<div class="tree-branches">
+						{categories.map((cat) => {
+							const catPosts = posts.filter(
+								(p) => (p.category || '').toLowerCase() === cat.name.toLowerCase()
+							);
+							return (
+								<div class="branch-col">
+									<div class="branch-card">
+										<div class="branch-header">
+											<span class="pill pill-emerald">{catPosts.length} posts</span>
+											<h3 class="branch-title">
+												<a href={`/category/${cat.slug}/`}>{cat.name}</a>
+											</h3>
+										</div>
+										<p class="branch-desc">{cat.description}</p>
+
+										<ul class="leaf-list">
+											{catPosts.slice(0, 4).map((post) => (
+												<li>
+													<a href={`/blog/${post.slug}/`}>{post.title}</a>
+												</li>
+											))}
+										</ul>
+
+										<a href={`/category/${cat.slug}/`} class="branch-explore-link">
+											Jelajahi Pilar {cat.name} &rarr;
+										</a>
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				</div>
+
+				<!-- Series Learning Trees -->
+				<section class="series-explore-section">
+					<div class="section-title-wrap">
+						<span class="pill pill-cyan">Linear Learning Roadmaps</span>
+						<h2>Structured Series Trees</h2>
+					</div>
+
+					<div class="series-tree-grid">
+						{seriesList.map((series) => (
+							<div class="glass-card series-tree-card">
+								<h3 class="tree-series-title">
+									<a href={`/series/${series.slug}/`}>{series.title}</a>
+								</h3>
+								<p class="tree-series-desc">{series.description}</p>
+
+								<div class="linear-path">
+									{series.posts.map((p, idx) => (
+										<div class="path-node">
+											<span class="node-dot">{p.position}</span>
+											<a href={`/blog/${p.slug}/`} class="node-title">{p.title}</a>
+										</div>
+									))}
+								</div>
+							</div>
+						))}
+					</div>
+				</section>
+			</div>
+		</main>
+
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.explore-container {
+		max-width: 1050px;
+	}
+
+	.page-header {
+		margin-bottom: 3.5rem;
+		max-width: 800px;
+	}
+
+	.page-title {
+		margin-bottom: 0.75rem;
+	}
+
+	.page-lead {
+		font-size: 1.15rem;
+		color: var(--text-secondary);
+		line-height: 1.7;
+	}
+
+	.tree-root {
+		padding: 3rem 2rem;
+		margin-bottom: 4rem;
+	}
+
+	.root-node {
+		text-align: center;
+		margin-bottom: 3rem;
+		position: relative;
+	}
+
+	.root-badge {
+		display: inline-block;
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.8rem;
+		font-weight: 700;
+		background: var(--primary);
+		color: #ffffff;
+		padding: 0.2rem 0.6rem;
+		border-radius: var(--radius-sm);
+		margin-bottom: 0.5rem;
+	}
+
+	.root-node h2 {
+		font-size: 1.75rem;
+		color: #ffffff;
+		margin-bottom: 0.25rem;
+	}
+
+	.root-node p {
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.85rem;
+		color: var(--primary-light);
+	}
+
+	.tree-branches {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 1.5rem;
+		position: relative;
+	}
+
+	.branch-card {
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-md);
+		padding: 1.5rem;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		transition: var(--transition-smooth);
+	}
+
+	.branch-card:hover {
+		border-color: var(--border-highlight);
+		background: rgba(255, 255, 255, 0.04);
+	}
+
+	.branch-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.5rem;
+	}
+
+	.branch-title {
+		font-size: 1.25rem;
+		margin: 0;
+	}
+
+	.branch-title a {
+		color: #ffffff;
+	}
+
+	.branch-desc {
+		font-size: 0.88rem;
+		color: var(--text-secondary);
+		margin-bottom: 1.25rem;
+		line-height: 1.5;
+	}
+
+	.leaf-list {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-bottom: 1.5rem;
+		flex: 1;
+	}
+
+	.leaf-list li {
+		position: relative;
+		padding-left: 1.2rem;
+		font-size: 0.88rem;
+	}
+
+	.leaf-list li::before {
+		content: "•";
+		position: absolute;
+		left: 0;
+		color: var(--primary-light);
+	}
+
+	.leaf-list a {
+		color: var(--text-secondary);
+	}
+
+	.leaf-list a:hover {
+		color: #ffffff;
+	}
+
+	.branch-explore-link {
+		font-size: 0.88rem;
+		font-weight: 600;
+		color: var(--primary-light);
+		padding-top: 1rem;
+		border-top: 1px solid var(--border-subtle);
+	}
+
+	.series-explore-section {
+		margin-bottom: 4rem;
+	}
+
+	.section-title-wrap {
+		margin-bottom: 2rem;
+	}
+
+	.section-title-wrap h2 {
+		font-size: 1.6rem;
+		margin-top: 0.4rem;
+	}
+
+	.series-tree-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+		gap: 1.5rem;
+	}
+
+	.series-tree-card {
+		padding: 2rem;
+	}
+
+	.tree-series-title {
+		font-size: 1.25rem;
+		margin-bottom: 0.35rem;
+	}
+
+	.tree-series-title a {
+		color: #ffffff;
+	}
+
+	.tree-series-desc {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		margin-bottom: 1.5rem;
+	}
+
+	.linear-path {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		border-left: 2px solid var(--border-subtle);
+		padding-left: 1.25rem;
+	}
+
+	.path-node {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+	}
+
+	.node-dot {
+		position: absolute;
+		left: -1.75rem;
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: var(--primary);
+		color: #ffffff;
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.68rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 700;
+	}
+
+	.node-title {
+		color: var(--text-secondary);
+		font-size: 0.88rem;
+	}
+
+	.node-title:hover {
+		color: #ffffff;
+	}
+</style>

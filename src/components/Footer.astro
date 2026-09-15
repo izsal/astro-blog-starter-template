@@ -27,28 +27,33 @@ const today = new Date();
 					<ul class="footer-nav-list">
 						<li><a href="/">Home</a></li>
 						<li><a href="/blog">Articles & Guides</a></li>
+						<li><a href="/series">Content Series</a></li>
 						<li><a href="/projects">Projects Showcase</a></li>
 						<li><a href="/knowledge">Knowledge Hub (TIL)</a></li>
 						<li><a href="/about">About {AUTHOR_NAME}</a></li>
+						<li><a href="/cv" style="color: #6ee7b7; font-weight: 600;">📄 Curriculum Vitae (CV)</a></li>
 					</ul>
 				</div>
 
 				<div class="links-col">
-					<h4 class="col-title">Clusters</h4>
+					<h4 class="col-title">Explore</h4>
 					<ul class="footer-nav-list">
-						<li><a href="/blog?tag=Astro">Astro & SSR</a></li>
-						<li><a href="/blog?tag=Cloudflare">Cloudflare & D1</a></li>
-						<li><a href="/blog?tag=TypeScript">TypeScript</a></li>
-						<li><a href="/blog?tag=Docker">Docker & Linux</a></li>
+						<li><a href="/devlog">/devlog (Engineering Journal)</a></li>
+						<li><a href="/explore">/explore (Knowledge Map)</a></li>
+						<li><a href="/now">/now (What I'm Doing)</a></li>
+						<li><a href="/uses">/uses (My Gear & Stack)</a></li>
+						<li><a href="/bookmarks">/bookmarks (Curated)</a></li>
+						<li><a href="/search">/search (Find Anything)</a></li>
 					</ul>
 				</div>
 
 				<div class="links-col">
 					<h4 class="col-title">Connect</h4>
 					<ul class="footer-nav-list">
-						<li><a href={SOCIAL_LINKS.github} target="_blank" rel="noopener">GitHub</a></li>
-						<li><a href={SOCIAL_LINKS.twitter} target="_blank" rel="noopener">Twitter / X</a></li>
-						<li><a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener">LinkedIn</a></li>
+						<li><a href={SOCIAL_LINKS.github} target="_blank" rel="noopener">GitHub (@izsal)</a></li>
+						<li><a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener">LinkedIn Profile</a></li>
+						<li><a href={`mailto:${SOCIAL_LINKS.email}`}>Email: {SOCIAL_LINKS.email}</a></li>
+						<li><a href={`tel:${SOCIAL_LINKS.phone}`}>Tel/WA: {SOCIAL_LINKS.phone}</a></li>
 						<li><a href="/rss.xml">RSS Feed</a></li>
 					</ul>
 				</div>

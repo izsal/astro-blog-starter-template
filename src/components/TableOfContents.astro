@@ -1,0 +1,134 @@
+---
+// Dynamic Table of Contents with Scrollspy
+---
+
+<nav class="toc-wrapper glass-card" id="table-of-contents" aria-label="Table of contents">
+	<div class="toc-header">
+		<span class="toc-icon">📑</span>
+		<h4 class="toc-title">On this page</h4>
+	</div>
+	<ul class="toc-list" id="toc-list">
+		<!-- Dynamically populated via client-side script from article headings -->
+	</ul>
+</nav>
+
+<script>
+	function initTableOfContents() {
+		const article = document.querySelector('.article-body');
+		const list = document.getElementById('toc-list');
+		const wrapper = document.getElementById('table-of-contents');
+		if (!article || !list || !wrapper) return;
+
+		const headings = article.querySelectorAll('h2, h3');
+		if (headings.length < 2) {
+			wrapper.style.display = 'none';
+			return;
+		}
+
+		list.innerHTML = '';
+
+		headings.forEach((heading, i) => {
+			if (!heading.id) {
+				heading.id = 'section-' + (heading.textContent || '')
+					.toLowerCase()
+					.replace(/[^a-z0-9]+/g, '-')
+					.replace(/(^-|-$)+/g, '') || `heading-${i}`;
+			}
+
+			const li = document.createElement('li');
+			li.className = heading.tagName.toLowerCase() === 'h3' ? 'toc-sub-item' : 'toc-item';
+
+			const a = document.createElement('a');
+			a.href = '#' + heading.id;
+			a.textContent = heading.textContent;
+			a.className = 'toc-link';
+
+			li.appendChild(a);
+			list.appendChild(li);
+		});
+
+		// Scrollspy observer
+		const links = list.querySelectorAll('.toc-link');
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) {
+						links.forEach((l) => l.classList.remove('active'));
+						const activeLink = list.querySelector(`a[href="#${entry.target.id}"]`);
+						if (activeLink) activeLink.classList.add('active');
+					}
+				});
+			},
+			{ rootMargin: '0px 0px -70% 0px' }
+		);
+
+		headings.forEach((h) => observer.observe(h));
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initTableOfContents);
+	} else {
+		initTableOfContents();
+	}
+</script>
+
+<style>
+	.toc-wrapper {
+		margin: 2rem 0;
+		padding: 1.25rem 1.5rem;
+		border-left: 3px solid var(--primary);
+	}
+
+	.toc-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.toc-icon {
+		font-size: 1rem;
+	}
+
+	.toc-title {
+		font-size: 0.92rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--text-primary);
+		margin: 0;
+	}
+
+	.toc-list {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 0.45rem;
+		font-size: 0.88rem;
+	}
+
+	.toc-item {
+		padding-left: 0.2rem;
+	}
+
+	.toc-sub-item {
+		padding-left: 1rem;
+		font-size: 0.82rem;
+	}
+
+	:global(.toc-link) {
+		color: var(--text-secondary);
+		text-decoration: none;
+		transition: var(--transition-smooth);
+		display: inline-block;
+	}
+
+	:global(.toc-link:hover) {
+		color: #ffffff;
+		padding-left: 3px;
+	}
+
+	:global(.toc-link.active) {
+		color: var(--primary-light);
+		font-weight: 600;
+	}
+</style>

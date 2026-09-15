@@ -1,0 +1,792 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { AUTHOR_NAME, AUTHOR_ROLE, SOCIAL_LINKS } from '../consts';
+
+export const prerender = true;
+
+const workExperiences = [
+	{
+		role: "Frontend Developer",
+		company: "PT Multi Karya Solusi",
+		location: "Jakarta",
+		period: "Sep 2024 — Present",
+		details: [
+			"Membangun ITOKIN Quality Control (QC) Mobile App dari awal menggunakan React Native untuk digitalisasi dan efisiensi proses quality assurance.",
+			"Mengimplementasikan integrasi API real-time untuk sinkronisasi data inspeksi QC di lapangan.",
+			"Mengembangkan Web App IRS Mockup untuk Automated Social Media Account Management berbasis AI dan Robotic Process Automation (RPA).",
+			"Membangun Web App Master Data QC Dashboard interaktif dengan visualisasi data grafik menggunakan React.js dan ApexCharts.",
+			"Melakukan R&D integrasi NextCloud untuk manajemen penyimpanan ODC dan manipulasi tampilan metadata file.",
+			"Mengembangkan portal website admin Itokin untuk manajemen penugasan tugas yang terhubung langsung ke aplikasi mobile Android."
+		]
+	},
+	{
+		role: "Fullstack Developer",
+		company: "PT GUITEKNO TRESNA TELEKOMUNIKASI",
+		location: "Jakarta",
+		period: "Sep 2023 — Sep 2024",
+		details: [
+			"Mengembangkan dan mengoptimasi platform LahTube (Islamic video sharing & social media) yang tersedia di Web, PlayStore, AppStore, dan TV Box.",
+			"Mengimplementasikan fitur Infinite Scroll performa tinggi untuk meningkatkan retensi dan kenyamanan pengguna.",
+			"Mengidentifikasi dan menyelesaikan bottleneck performa serta bug frontend pada ekosistem web LahTube.",
+			"Membangun modul Admin Market untuk mempermudah operasional e-commerce dan manajemen katalog produk.",
+			"Mengintegrasikan core website LahTube dengan sistem pasar digital secara seamless.",
+			"Mengorkestrasi lingkungan local development dan deployment tim menggunakan Docker dan Docker Compose."
+		]
+	},
+	{
+		role: "Backend Developer",
+		company: "PT. Tekno Solusi Nusantara",
+		location: "Jakarta",
+		period: "Sep 2023 — Dec 2023",
+		details: [
+			"Merancang dan mengembangkan scalable RESTful APIs berkeamanan tinggi menggunakan bahasa Golang.",
+			"Mengoptimasi performa query database MySQL & PostgreSQL dengan teknik indexing dan query tuning, memangkas latency response hingga 30%.",
+			"Menerapkan arsitektur Microservices yang saling berkomunikasi melalui protokol gRPC untuk stabilitas tinggi antarlayanan.",
+			"Melakukan automated unit testing dan load testing komprehensif menggunakan Go test untuk menjamin kesiapan skala produksi.",
+			"Membangun middleware logging, otentikasi aman, dan mengintegrasikan Redis Caching untuk mengurangi beban kueri database utama."
+		]
+	},
+	{
+		role: "Fullstack Developer",
+		company: "PT Visi Multimedia Aditama",
+		location: "Yogyakarta",
+		period: "May 2022 — Aug 2023",
+		details: [
+			"Merancang dan mengembangkan Custom Admin Tool untuk efisiensi pengelolaan konten dan situs klien.",
+			"Membangun RESTful API dengan Golang serta mengelola integritas data (data fix) pada basis data relasional.",
+			"Melakukan maintenance berkelanjutan, refactoring kode, dan perbaikan bug sistem di repositori Bitbucket."
+		]
+	},
+	{
+		role: "Backend Developer",
+		company: "RUN System",
+		location: "Yogyakarta",
+		period: "Mar 2021 — Mar 2022",
+		details: [
+			"Mengembangkan aplikasi B2B Run Market serta solusi digital E-Office untuk otomasi proses administrasi perkantoran.",
+			"Mempercepat alur komunikasi dan manajemen dokumen sehingga mengurangi waktu pemrosesan Product Manager secara signifikan.",
+			"Memimpin proses migrasi sistem dan database Run Market, meminimalkan downtime dan menjaga integritas data.",
+			"Menangani debugging kritis dan peningkatan performa sistem backend."
+		]
+	},
+	{
+		role: "Programmer",
+		company: "PT. Sentra Inovasi Solusindo",
+		location: "Jakarta",
+		period: "Jun 2019 — Dec 2019",
+		details: [
+			"Melakukan migrasi sistem internal dari CodeIgniter 2 ke CodeIgniter 3 dengan basis data PostgreSQL.",
+			"Membuat RESTful API baru menggunakan Golang untuk diintegrasikan dengan aplikasi web perusahaan."
+		]
+	}
+];
+
+const projects = [
+	{
+		title: "Netflix Clone",
+		tech: ["React.js", "Next.js", "Tailwind CSS", "Vercel"],
+		liveUrl: "https://clone-netflix-coral.vercel.app/",
+		desc: "Aplikasi streaming video interaktif dengan responsivitas tinggi, navigasi modern, dan UI autentik Netflix."
+	},
+	{
+		title: "Next.js 13 E-Commerce Store",
+		tech: ["Next.js 13", "React", "TypeScript", "Tailwind CSS"],
+		liveUrl: "https://next13-ecommerece-store.vercel.app/",
+		desc: "Toko online modern lengkap dengan katalog produk, shopping cart, dynamic routing, dan checkout flow."
+	},
+	{
+		title: "Web Wisata Berbasis GIS & PWA",
+		tech: ["Laravel", "React.js", "Mapbox", "PWA"],
+		desc: "Aplikasi penjelajahan destinasi wisata berbasis peta interaktif spasial (GIS) dengan dukungan offline Progressive Web App."
+	},
+	{
+		title: "Website Toko Online (Laravel & Inertia)",
+		tech: ["Laravel", "Inertia.js", "React.js", "MySQL"],
+		desc: "Sistem e-commerce monolitik modern dengan integrasi seamless antara backend Laravel dan reaktivitas frontend React."
+	},
+	{
+		title: "ITOKIN Quality Control Mobile App",
+		tech: ["React Native", "Mobile", "REST API"],
+		desc: "Aplikasi mobile inspeksi kualitas (QC) lapangan dengan sinkronisasi data inspeksi waktu nyata ke sistem ERP kantor pusat."
+	},
+	{
+		title: "LahTube Islamic Video Platform",
+		tech: ["Fullstack", "Docker", "Infinite Scroll", "Video Streaming"],
+		desc: "Platform video sharing lintas platform (Web, Android, iOS, TV Box) dengan fitur sosial, infinite scroll, dan admin market."
+	}
+];
+
+const skillCategories = [
+	{
+		category: "Frontend & Mobile",
+		skills: ["React.js", "React Native", "Next.js", "Vue.js", "Inertia.js", "Tailwind CSS", "JavaScript (ES6+)", "TypeScript", "HTML5 & CSS3", "ApexCharts", "Mapbox"]
+	},
+	{
+		category: "Backend & Architecture",
+		skills: ["Golang (Go)", "RESTful APIs", "gRPC", "Microservices", "PHP", "Laravel", "CodeIgniter", "Node.js", "Unit Testing (Go test)"]
+	},
+	{
+		category: "Database & Caching",
+		skills: ["PostgreSQL", "MySQL", "Cloudflare D1 (SQLite)", "Redis Caching", "Database Indexing & Query Tuning"]
+	},
+	{
+		category: "Cloud, DevOps & Tools",
+		skills: ["Docker", "Docker Compose", "Cloudflare Workers & Pages", "NextCloud", "Git (GitHub, GitLab, Bitbucket)", "Linux (Ubuntu)", "Agile / Scrum"]
+	}
+];
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`Curriculum Vitae — ${AUTHOR_NAME} | Fullstack Developer`}
+			description={`CV & Resume profesional ${AUTHOR_NAME}: Fullstack Developer berpengalaman dalam React, React Native, Next.js, Golang, dan Cloud/Docker.`}
+		/>
+	</head>
+	<body class="cv-page">
+		<Header />
+
+		<main class="section cv-main">
+			<div class="container cv-container">
+				<!-- Action Toolbar (Hidden in Print) -->
+				<div class="cv-actions-bar no-print">
+					<div class="actions-left">
+						<span class="pill pill-emerald">Curriculum Vitae Resmi</span>
+						<span class="updated-date">Terakhir Diperbarui: 2026</span>
+					</div>
+					<div class="actions-right">
+						<button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="6 9 6 2 18 2 18 9"></polyline>
+								<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+								<rect x="6" y="14" width="12" height="8"></rect>
+							</svg>
+							<span>Cetak / Simpan PDF</span>
+						</button>
+						<a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
+							<span>LinkedIn Profile ↗</span>
+						</a>
+						<a href={`mailto:${SOCIAL_LINKS.email}`} class="btn btn-secondary btn-sm">
+							<span>Kirim Email</span>
+						</a>
+					</div>
+				</div>
+
+				<!-- Printable CV Paper Card -->
+				<div class="cv-paper glass-card">
+					<!-- Header Section -->
+					<header class="cv-header">
+						<div class="cv-header-left">
+							<h1 class="cv-name">{AUTHOR_NAME}</h1>
+							<p class="cv-role">{AUTHOR_ROLE}</p>
+							<p class="cv-location">
+								<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+									<circle cx="12" cy="10" r="3"></circle>
+								</svg>
+								<span>Jl. Gebang Sari No.56, Bambu Apus, Cipayung, Jakarta Timur 13890</span>
+							</p>
+						</div>
+
+						<div class="cv-contacts-grid">
+							<a href={`tel:${SOCIAL_LINKS.phone}`} class="contact-pill">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+								<span>{SOCIAL_LINKS.phone}</span>
+							</a>
+							<a href={`mailto:${SOCIAL_LINKS.email}`} class="contact-pill">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+								<span>{SOCIAL_LINKS.email}</span>
+							</a>
+							<a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener" class="contact-pill">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect width="4" height="12" x="2" y="9"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+								<span>LinkedIn: izsal-qurlinas-afandi</span>
+							</a>
+							<a href={SOCIAL_LINKS.github} target="_blank" rel="noopener" class="contact-pill">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+								<span>GitHub: github.com/izsal</span>
+							</a>
+						</div>
+					</header>
+
+					<!-- Professional Summary -->
+					<section class="cv-section">
+						<h2 class="cv-heading">Professional Summary</h2>
+						<p class="cv-summary-text">
+							An experienced <strong>Fullstack Developer</strong> with strong capabilities in both frontend, backend, and mobile application development. Proven track record in building intuitive user interfaces, optimizing system performance (reducing database query latency by up to 30%), and enhancing operational efficiency through innovative technology solutions. Extensive experience in developing web and mobile applications using <strong>React, React Native, Next.js, Golang, PHP/Laravel</strong>, and cloud/container technologies such as <strong>Docker, NextCloud, and Cloudflare D1/Workers</strong>. Adept at working in Agile teams and quickly adapting to evolving business needs.
+						</p>
+					</section>
+
+					<!-- Technical Skills Matrix -->
+					<section class="cv-section">
+						<h2 class="cv-heading">Technical Skills & Expertise</h2>
+						<div class="skills-matrix">
+							{skillCategories.map((sc) => (
+								<div class="skill-category-row">
+									<strong class="skill-label">{sc.category}:</strong>
+									<div class="skill-badges">
+										{sc.skills.map((s) => (
+											<span class="cv-badge">{s}</span>
+										))}
+									</div>
+								</div>
+							))}
+							<div class="skill-category-row">
+								<strong class="skill-label">Soft Skills & Languages:</strong>
+								<div class="skill-badges">
+									<span class="cv-badge">Bahasa Indonesia (Native)</span>
+									<span class="cv-badge">English (Professional)</span>
+									<span class="cv-badge">Quick to Adapt</span>
+									<span class="cv-badge">Problem Solving</span>
+									<span class="cv-badge">Agile/Scrum Teamwork</span>
+								</div>
+							</div>
+						</div>
+					</section>
+
+					<!-- Work Experience Timeline -->
+					<section class="cv-section">
+						<h2 class="cv-heading">Work Experience</h2>
+						<div class="experience-list">
+							{workExperiences.map((exp) => (
+								<div class="exp-entry">
+									<div class="exp-entry-top">
+										<div>
+											<h3 class="exp-entry-role">{exp.role}</h3>
+											<p class="exp-entry-company">{exp.company} &bull; <span class="exp-location">{exp.location}</span></p>
+										</div>
+										<span class="exp-entry-period">{exp.period}</span>
+									</div>
+									<ul class="exp-bullets">
+										{exp.details.map((d) => (
+											<li>{d}</li>
+										))}
+									</ul>
+								</div>
+							))}
+						</div>
+					</section>
+
+					<!-- Featured Projects Showcase -->
+					<section class="cv-section page-break-before">
+						<h2 class="cv-heading">Featured Projects & Portfolio</h2>
+						<div class="projects-cv-grid">
+							{projects.map((p) => (
+								<div class="project-cv-card">
+									<div class="proj-cv-top">
+										<h3 class="proj-cv-title">{p.title}</h3>
+										{p.liveUrl && (
+											<a href={p.liveUrl} target="_blank" rel="noopener" class="proj-live-link">
+												Live Demo ↗
+											</a>
+										)}
+									</div>
+									<p class="proj-cv-desc">{p.desc}</p>
+									<div class="proj-tech-tags">
+										{p.tech.map((t) => (
+											<span class="tech-tag">{t}</span>
+										))}
+									</div>
+								</div>
+							))}
+						</div>
+					</section>
+
+					<!-- Education -->
+					<section class="cv-section">
+						<h2 class="cv-heading">Education</h2>
+						<div class="edu-entry">
+							<div class="edu-top">
+								<div>
+									<h3 class="edu-degree">Diploma in Teknik Elektronika</h3>
+									<p class="edu-school">Universitas Negeri Padang — Padang, Indonesia</p>
+								</div>
+								<div class="edu-right">
+									<span class="edu-period">Apr 2016 — Sep 2018</span>
+									<span class="edu-gpa">IPK: <strong>3.30</strong> / 4.00</span>
+								</div>
+							</div>
+							<p class="edu-desc">
+								Fokus pembelajaran: Web Programming Fundamentals, Object-Oriented Programming with Java, Mobile Development (Android with Eclipse & Java).
+							</p>
+						</div>
+					</section>
+				</div>
+			</div>
+		</main>
+
+		<div class="no-print">
+			<Footer />
+		</div>
+	</body>
+</html>
+
+<style>
+	.cv-page {
+		background: #080b12;
+		color: var(--text-primary);
+		min-height: 100vh;
+	}
+
+	.cv-main {
+		padding-top: 1.5rem;
+		padding-bottom: 4rem;
+	}
+
+	.cv-container {
+		max-width: 900px;
+		margin: 0 auto;
+	}
+
+	/* Actions Bar */
+	.cv-actions-bar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1rem 1.5rem;
+		background: rgba(13, 18, 30, 0.7);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-md);
+		margin-bottom: 2rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+		backdrop-filter: blur(10px);
+	}
+
+	.actions-left {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.updated-date {
+		font-size: 0.82rem;
+		color: var(--text-muted);
+	}
+
+	.actions-right {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.btn-sm {
+		padding: 0.45rem 0.85rem;
+		font-size: 0.84rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	/* CV Paper */
+	.cv-paper {
+		background: #0b0f19;
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-lg);
+		padding: 3.5rem 3.5rem;
+		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+	}
+
+	/* Header */
+	.cv-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		border-bottom: 2px solid var(--border-subtle);
+		padding-bottom: 2rem;
+		margin-bottom: 2rem;
+		gap: 2rem;
+		flex-wrap: wrap;
+	}
+
+	.cv-name {
+		font-size: 2.2rem;
+		font-weight: 800;
+		color: #ffffff;
+		margin-bottom: 0.25rem;
+		letter-spacing: -0.02em;
+	}
+
+	.cv-role {
+		font-size: 1.15rem;
+		font-weight: 600;
+		color: var(--primary-light);
+		margin-bottom: 0.75rem;
+	}
+
+	.cv-location {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		margin: 0;
+	}
+
+	.cv-contacts-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.contact-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		text-decoration: none;
+		transition: var(--transition-smooth);
+	}
+
+	.contact-pill:hover {
+		color: var(--primary-light);
+	}
+
+	/* Sections */
+	.cv-section {
+		margin-bottom: 2.5rem;
+	}
+
+	.cv-heading {
+		font-size: 1.15rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #ffffff;
+		border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+		padding-bottom: 0.45rem;
+		margin-bottom: 1.25rem;
+		position: relative;
+	}
+
+	.cv-heading::after {
+		content: "";
+		position: absolute;
+		left: 0;
+		bottom: -1px;
+		width: 40px;
+		height: 2px;
+		background: var(--primary);
+	}
+
+	.cv-summary-text {
+		font-size: 0.95rem;
+		line-height: 1.7;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+
+	.cv-summary-text strong {
+		color: #ffffff;
+	}
+
+	/* Skills Matrix */
+	.skills-matrix {
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
+	}
+
+	.skill-category-row {
+		display: grid;
+		grid-template-columns: 190px 1fr;
+		align-items: baseline;
+		gap: 1rem;
+	}
+
+	.skill-label {
+		font-size: 0.88rem;
+		color: #ffffff;
+	}
+
+	.skill-badges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+
+	.cv-badge {
+		padding: 0.2rem 0.6rem;
+		border-radius: 4px;
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid var(--border-subtle);
+		font-size: 0.82rem;
+		color: var(--text-secondary);
+	}
+
+	/* Experience List */
+	.experience-list {
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+	}
+
+	.exp-entry {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.exp-entry-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.exp-entry-role {
+		font-size: 1.08rem;
+		font-weight: 700;
+		color: #ffffff;
+		margin: 0 0 0.2rem 0;
+	}
+
+	.exp-entry-company {
+		font-size: 0.9rem;
+		color: var(--primary-light);
+		margin: 0;
+		font-weight: 500;
+	}
+
+	.exp-location {
+		color: var(--text-muted);
+		font-weight: 400;
+	}
+
+	.exp-entry-period {
+		font-size: 0.85rem;
+		font-family: "JetBrains Mono", monospace;
+		color: var(--text-muted);
+		background: rgba(255, 255, 255, 0.04);
+		padding: 0.2rem 0.6rem;
+		border-radius: 4px;
+		border: 1px solid var(--border-subtle);
+	}
+
+	.exp-bullets {
+		margin: 0.5rem 0 0 1.25rem;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.exp-bullets li {
+		font-size: 0.9rem;
+		line-height: 1.6;
+		color: var(--text-secondary);
+	}
+
+	/* Projects CV Grid */
+	.projects-cv-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.25rem;
+	}
+
+	.project-cv-card {
+		padding: 1.25rem;
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-sm);
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.proj-cv-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.proj-cv-title {
+		font-size: 0.98rem;
+		font-weight: 700;
+		color: #ffffff;
+		margin: 0;
+	}
+
+	.proj-live-link {
+		font-size: 0.8rem;
+		color: var(--primary-light);
+		text-decoration: none;
+		font-weight: 600;
+	}
+
+	.proj-live-link:hover {
+		text-decoration: underline;
+	}
+
+	.proj-cv-desc {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+		margin: 0;
+	}
+
+	.proj-tech-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		margin-top: 0.25rem;
+	}
+
+	.tech-tag {
+		font-size: 0.72rem;
+		font-family: "JetBrains Mono", monospace;
+		background: rgba(99, 102, 241, 0.1);
+		border: 1px solid rgba(99, 102, 241, 0.25);
+		color: #a5b4fc;
+		padding: 0.15rem 0.45rem;
+		border-radius: 4px;
+	}
+
+	/* Education */
+	.edu-entry {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.edu-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.edu-degree {
+		font-size: 1.05rem;
+		font-weight: 700;
+		color: #ffffff;
+		margin: 0 0 0.2rem 0;
+	}
+
+	.edu-school {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+
+	.edu-right {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.2rem;
+	}
+
+	.edu-period {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		font-family: "JetBrains Mono", monospace;
+	}
+
+	.edu-gpa {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+	}
+
+	.edu-gpa strong {
+		color: #34d399;
+	}
+
+	.edu-desc {
+		font-size: 0.88rem;
+		color: var(--text-muted);
+		line-height: 1.5;
+		margin: 0;
+	}
+
+	/* Responsive */
+	@media (max-width: 768px) {
+		.cv-paper {
+			padding: 2rem 1.5rem;
+		}
+
+		.skill-category-row {
+			grid-template-columns: 1fr;
+			gap: 0.4rem;
+		}
+
+		.projects-cv-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.edu-right {
+			align-items: flex-start;
+		}
+	}
+
+	/* Print Optimization (Clean White Paper Output) */
+	@media print {
+		.no-print, header.site-header, footer {
+			display: none !important;
+		}
+
+		body.cv-page, .cv-main {
+			background: #ffffff !important;
+			color: #111827 !important;
+			padding: 0 !important;
+			margin: 0 !important;
+		}
+
+		.cv-paper {
+			background: #ffffff !important;
+			border: none !important;
+			box-shadow: none !important;
+			padding: 0 !important;
+			color: #111827 !important;
+		}
+
+		.cv-name {
+			color: #000000 !important;
+		}
+
+		.cv-role, .exp-entry-company, .proj-live-link {
+			color: #2563eb !important;
+		}
+
+		.cv-location, .exp-entry-period, .edu-period, .updated-date {
+			color: #6b7280 !important;
+		}
+
+		.contact-pill, .cv-summary-text, .exp-bullets li, .proj-cv-desc, .edu-school, .edu-desc {
+			color: #374151 !important;
+		}
+
+		.cv-heading {
+			color: #111827 !important;
+			border-bottom-color: #cbd5e1 !important;
+		}
+
+		.cv-heading::after {
+			background: #2563eb !important;
+		}
+
+		.skill-label, .exp-entry-role, .proj-cv-title, .edu-degree {
+			color: #111827 !important;
+		}
+
+		.cv-badge, .tech-tag, .exp-entry-period {
+			background: #f1f5f9 !important;
+			border-color: #e2e8f0 !important;
+			color: #1e293b !important;
+		}
+
+		.project-cv-card {
+			border-color: #e2e8f0 !important;
+			background: #fafafa !important;
+		}
+
+		.page-break-before {
+			page-break-before: auto;
+		}
+	}
+</style>

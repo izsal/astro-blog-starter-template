@@ -1,0 +1,200 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { SITE_TITLE } from '../../consts';
+import { getD1Database } from '../../lib/db';
+import { getSeriesBySlug } from '../../lib/series';
+
+export async function getStaticPaths() {
+	return [
+		{ params: { slug: 'astro-cloudflare' } },
+		{ params: { slug: 'docker-microservices' } },
+	];
+}
+
+const { slug } = Astro.params;
+const db = getD1Database(Astro.locals);
+const series = await getSeriesBySlug(db, slug || '');
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`${series?.title || 'Series'} — ${SITE_TITLE}`}
+			description={series?.description || 'Content series pembelajaran terstruktur.'}
+		/>
+	</head>
+	<body>
+		<Header />
+
+		<main class="section">
+			<div class="container">
+				<div class="series-header">
+					<div class="breadcrumb">
+						<a href="/">Home</a> / <a href="/series">Series</a> / <span>{series?.title}</span>
+					</div>
+					<span class="pill pill-emerald mb-2">{series?.posts.length || 0} Parts Roadmap</span>
+					<h1 class="page-title">{series?.title}</h1>
+					<p class="page-lead">{series?.description}</p>
+				</div>
+
+				<div class="timeline-roadmap glass-card">
+					<h3 class="roadmap-title">Alur Materi & Langkah Belajar:</h3>
+					<div class="roadmap-steps">
+						{series?.posts.map((post, idx) => (
+							<div class="step-card">
+								<div class="step-badge">
+									<span>{post.position}</span>
+								</div>
+								<div class="step-content">
+									<div class="step-meta">
+										<span class="part-label">Part {post.position}</span>
+									</div>
+									<h4 class="step-title">
+										<a href={`/blog/${post.slug}/`}>{post.title}</a>
+									</h4>
+									<p class="step-hint">Pelajari arsitektur dan implementasi teknis &rarr;</p>
+								</div>
+								<div class="step-action">
+									<a href={`/blog/${post.slug}/`} class="btn btn-secondary">
+										Baca Part {post.position}
+									</a>
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+			</div>
+		</main>
+
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.series-header {
+		margin-bottom: 3.5rem;
+		max-width: 800px;
+	}
+
+	.breadcrumb {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		margin-bottom: 1rem;
+	}
+
+	.breadcrumb a {
+		color: var(--text-secondary);
+	}
+
+	.breadcrumb span {
+		color: var(--primary-light);
+	}
+
+	.page-title {
+		margin-bottom: 0.75rem;
+	}
+
+	.page-lead {
+		font-size: 1.15rem;
+		color: var(--text-secondary);
+		line-height: 1.7;
+	}
+
+	.timeline-roadmap {
+		padding: 2.5rem;
+		margin-bottom: 4rem;
+	}
+
+	.roadmap-title {
+		font-size: 1.25rem;
+		margin-bottom: 2rem;
+		color: #ffffff;
+	}
+
+	.roadmap-steps {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.step-card {
+		display: flex;
+		align-items: center;
+		gap: 1.5rem;
+		padding: 1.25rem 1.5rem;
+		border-radius: var(--radius-sm);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+		transition: var(--transition-smooth);
+	}
+
+	.step-card:hover {
+		background: rgba(255, 255, 255, 0.05);
+		border-color: var(--border-highlight);
+	}
+
+	.step-badge {
+		width: 42px;
+		height: 42px;
+		border-radius: 50%;
+		background: rgba(99, 102, 241, 0.15);
+		border: 1px solid rgba(99, 102, 241, 0.3);
+		color: var(--primary-light);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 700;
+		font-family: "JetBrains Mono", monospace;
+		flex-shrink: 0;
+	}
+
+	.step-content {
+		flex: 1;
+	}
+
+	.part-label {
+		font-size: 0.78rem;
+		font-weight: 600;
+		color: var(--primary-light);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.step-title {
+		font-size: 1.1rem;
+		margin: 0.2rem 0;
+	}
+
+	.step-title a {
+		color: #ffffff;
+	}
+
+	.step-title a:hover {
+		color: var(--primary-light);
+	}
+
+	.step-hint {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		margin: 0;
+	}
+
+	@media (max-width: 680px) {
+		.step-card {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 1rem;
+		}
+
+		.step-action {
+			width: 100%;
+		}
+
+		.step-action .btn {
+			width: 100%;
+		}
+	}
+</style>

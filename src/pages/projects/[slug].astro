@@ -1,0 +1,173 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { SITE_TITLE, AUTHOR_NAME } from '../../consts';
+import { getD1Database, getProjects } from '../../lib/db';
+
+export async function getStaticPaths() {
+	return [
+		{ params: { slug: 'netflix-clone' } },
+		{ params: { slug: 'nextjs-ecommerce' } },
+		{ params: { slug: 'itokin-qc-mobile' } },
+		{ params: { slug: 'lahtube-video-platform' } },
+		{ params: { slug: 'gis-pwa-wisata' } },
+		{ params: { slug: 'e-office-run-market' } },
+		{ params: { slug: 'cloud-edge-api' } },
+		{ params: { slug: 'astro-knowledge-hub' } },
+		{ params: { slug: 'docker-homelab-infra' } },
+	];
+}
+
+const { slug } = Astro.params;
+const db = getD1Database(Astro.locals);
+const projects = await getProjects(db, false);
+const project = projects.find((p) => p.slug === slug) || projects[0];
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`${project.title} — ${AUTHOR_NAME}`}
+			description={project.description}
+		/>
+	</head>
+	<body>
+		<Header />
+
+		<main class="section">
+			<div class="container project-detail-container">
+				<div class="breadcrumb">
+					<a href="/">Home</a> / <a href="/projects">Projects</a> / <span>{project.title}</span>
+				</div>
+
+				<header class="project-header">
+					<div class="header-pills">
+						<span class="pill pill-cyan">{project.category}</span>
+						<span class="pill pill-emerald">D1 Synced</span>
+					</div>
+					<h1 class="project-title">{project.title}</h1>
+					<p class="project-lead">{project.description}</p>
+
+					<div class="project-links-row">
+						{project.github_url && (
+							<a href={project.github_url} target="_blank" rel="noopener" class="btn btn-primary">
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+								</svg>
+								<span>Lihat Source Code</span>
+							</a>
+						)}
+						{project.live_url && (
+							<a href={project.live_url} target="_blank" rel="noopener" class="btn btn-secondary">
+								<span>Live Demo / Production &rarr;</span>
+							</a>
+						)}
+					</div>
+				</header>
+
+				<!-- Tech Stack Breakdown -->
+				<section class="stack-section glass-card">
+					<h3>Tech Stack & Arsitektur</h3>
+					<div class="stack-pills">
+						{project.tech_stack.map((t) => (
+							<span class="pill pill-neutral">{t}</span>
+						))}
+					</div>
+				</section>
+
+				<!-- Overview / Narrative -->
+				<section class="prose project-body">
+					<h2>Tentang Proyek Ini</h2>
+					<p>
+						Proyek ini dikembangkan dengan fokus pada performa maksimal, skalabilitas distributed systems, dan kebersihan arsitektur kode. Seluruh interaksi data dirancang untuk meminimalkan round-trip time jaringan.
+					</p>
+					<h3>Tantangan Teknis & Solusi</h3>
+					<ul>
+						<li><strong>Edge Data Synchronization:</strong> Menggunakan Cloudflare Workers dan D1 SQLite untuk menyediakan latensi di bawah 50ms bagi pengguna di seluruh dunia.</li>
+						<li><strong>Type Safety:</strong> Menjamin end-to-end type safety dari skema database hingga komponen presentasi frontend.</li>
+					</ul>
+				</section>
+
+				<div class="back-footer">
+					<a href="/projects" class="btn btn-secondary">&larr; Kembali ke Semua Projects</a>
+				</div>
+			</div>
+		</main>
+
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.project-detail-container {
+		max-width: 800px;
+	}
+
+	.breadcrumb {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		margin-bottom: 1.5rem;
+	}
+
+	.breadcrumb a {
+		color: var(--text-secondary);
+	}
+
+	.breadcrumb span {
+		color: var(--primary-light);
+	}
+
+	.header-pills {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.project-title {
+		font-size: clamp(2rem, 4vw, 2.7rem);
+		margin-bottom: 1rem;
+	}
+
+	.project-lead {
+		font-size: 1.15rem;
+		color: var(--text-secondary);
+		line-height: 1.7;
+		margin-bottom: 2rem;
+	}
+
+	.project-links-row {
+		display: flex;
+		gap: 1rem;
+		flex-wrap: wrap;
+		margin-bottom: 3rem;
+		padding-bottom: 2rem;
+		border-bottom: 1px solid var(--border-subtle);
+	}
+
+	.stack-section {
+		margin-bottom: 3rem;
+		padding: 2rem;
+	}
+
+	.stack-section h3 {
+		font-size: 1.15rem;
+		margin-bottom: 1rem;
+	}
+
+	.stack-pills {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.project-body {
+		margin-bottom: 4rem;
+	}
+
+	.back-footer {
+		padding-top: 2rem;
+		border-top: 1px solid var(--border-subtle);
+	}
+</style>

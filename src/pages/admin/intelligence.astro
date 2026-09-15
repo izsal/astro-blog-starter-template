@@ -1,0 +1,768 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import { SITE_TITLE, AUTHOR_NAME } from '../../consts';
+import { verifyAdminSession } from '../../lib/admin-auth';
+import { getD1Database } from '../../lib/db';
+import { getUnifiedPosts } from '../../lib/posts';
+import { getCategories } from '../../lib/categories';
+import {
+	calculateArticleHealth,
+	detectContentRefreshNeeds,
+	getContentClusterStats,
+	getKeywords,
+} from '../../lib/intelligence';
+
+export const prerender = false;
+
+const cookie = Astro.request.headers.get('cookie');
+if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
+	return Astro.redirect('/admin');
+}
+
+const db = getD1Database(Astro.locals);
+const posts = await getUnifiedPosts(db);
+const categories = await getCategories(db);
+
+const refreshQueue = detectContentRefreshNeeds(posts);
+const clusterStats = getContentClusterStats(categories, posts);
+const keywords = await getKeywords(db);
+
+// Calculate health for the top 3 posts
+const postsWithHealth = posts.slice(0, 4).map((p) => ({
+	post: p,
+	health: calculateArticleHealth(p),
+}));
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`Content Intelligence Engine — Admin ${SITE_TITLE}`}
+			description="Kecerdasan konten, peluang SEO, audit kesehatan artikel, dan manajemen cluster."
+		/>
+	</head>
+	<body class="admin-body">
+		<header class="admin-topbar">
+			<div class="topbar-inner">
+				<div class="topbar-brand">
+					<span class="brand-dot"></span>
+					<span class="brand-name">qblog Admin</span>
+					<span class="pill pill-cyan">Content Intelligence Engine</span>
+				</div>
+				<div class="topbar-actions">
+					<a href="/admin/dashboard" class="btn btn-secondary top-btn">&larr; Command Center</a>
+					<a href="/admin/posts/new" class="btn btn-primary top-btn">+ Tulis Artikel Baru</a>
+				</div>
+			</div>
+		</header>
+
+		<div class="admin-container">
+			<div class="page-top">
+				<h1 class="page-title">🔥 Content Intelligence & Growth Engine</h1>
+				<p class="page-subtitle">
+					Analisis berbasis data menjawab: <em>"Artikel mana yang harus dibuat atau diperbarui agar traffic organik naik?"</em>
+				</p>
+			</div>
+
+			<!-- Top Opportunities & Content Ideas (PRD Feature 1) -->
+			<div class="grid-2-custom mb-4">
+				<!-- Top Opportunities -->
+				<div class="glass-card intel-card">
+					<div class="card-title-row">
+						<span class="card-icon">🔥</span>
+						<h2>TOP OPPORTUNITIES (Traffic Multipliers)</h2>
+					</div>
+					<p class="card-lead">Artikel dengan impresi tinggi di Google yang paling berpotensi masuk Top 5 dengan sedikit perbaikan.</p>
+
+					<div class="opp-cards-list">
+						<div class="opp-box">
+							<div class="opp-header">
+								<h3 class="opp-title">Astro + Cloudflare Mastery</h3>
+								<span class="pill pill-emerald">Posisi: 11 (Tinggi)</span>
+							</div>
+							<div class="opp-stats">
+								<span>Impresi: <strong>1,284 / bulan</strong></span>
+								<span>•</span>
+								<span>CTR: <strong>4.2%</strong></span>
+							</div>
+							<div class="opp-action-checklist">
+								<p class="action-hint">Rekomendasi tindakan terarah:</p>
+								<ul>
+									<li>→ Update artikel ke fitur terbaru Astro 5.16</li>
+									<li>→ Tambahkan 3 internal links ke artikel cluster Cloudflare D1</li>
+									<li>→ Pertegas kata kunci utama di Heading H2</li>
+								</ul>
+							</div>
+							<a href="/admin/posts" class="btn btn-primary btn-sm mt-2">Perbarui Artikel Sekarang &rarr;</a>
+						</div>
+
+						<div class="opp-box">
+							<div class="opp-header">
+								<h3 class="opp-title">Docker Homelab Microservices</h3>
+								<span class="pill pill-cyan">Posisi: 14</span>
+							</div>
+							<div class="opp-stats">
+								<span>Impresi: <strong>920 / bulan</strong></span>
+								<span>•</span>
+								<span>CTR: <strong>3.8%</strong></span>
+							</div>
+							<div class="opp-action-checklist">
+								<p class="action-hint">Rekomendasi tindakan terarah:</p>
+								<ul>
+									<li>→ Tambahkan konfigurasi docker-compose.yml copyable</li>
+									<li>→ Hubungkan dengan project portofolio Homelab</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Content Ideas Radar -->
+				<div class="glass-card intel-card">
+					<div class="card-title-row">
+						<span class="card-icon">✍️</span>
+						<h2>CONTENT IDEAS (Topical Gaps)</h2>
+					</div>
+					<p class="card-lead">Topik yang banyak dicari audiens developer tapi belum tersedia di blog Anda.</p>
+
+					<div class="ideas-list">
+						<div class="idea-item">
+							<div class="idea-top">
+								<h4>Astro D1 Authentication & Session</h4>
+								<span class="pill pill-emerald">Permintaan Tinggi</span>
+							</div>
+							<p>Tutorial login dan session cookie di Cloudflare Workers dengan D1 SQLite.</p>
+							<a href="/admin/posts/new" class="idea-action">+ Buat Draft &rarr;</a>
+						</div>
+
+						<div class="idea-item">
+							<div class="idea-top">
+								<h4>Cloudflare R2 Image Upload Pipeline</h4>
+								<span class="pill pill-cyan">Topical Authority</span>
+							</div>
+							<p>Cara upload file ke bucket R2 tanpa membocorkan credentials API.</p>
+							<a href="/admin/posts/new" class="idea-action">+ Buat Draft &rarr;</a>
+						</div>
+
+						<div class="idea-item">
+							<div class="idea-top">
+								<h4>Astro vs Next.js di Cloudflare Edge</h4>
+								<span class="pill pill-neutral">Search Intent Kuat</span>
+							</div>
+							<p>Perbandingan komparatif cold start, bundle size, dan memory usage.</p>
+							<a href="/admin/posts/new" class="idea-action">+ Buat Draft &rarr;</a>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Article Health Score (PRD Feature 3) -->
+			<section class="glass-card health-score-section mb-4">
+				<div class="card-title-row">
+					<span class="card-icon">📊</span>
+					<h2>ARTICLE HEALTH SCORE (Audit Mutu Konten)</h2>
+				</div>
+				<p class="card-lead">Audit kualitas menyeluruh: mengukur SEO, kedalaman konten, keterhubungan internal links, keterbacaan, dan kesegaran informasi.</p>
+
+				<div class="health-cards-grid">
+					{postsWithHealth.map(({ post, health }) => (
+						<div class="health-breakdown-card">
+							<div class="breakdown-header">
+								<h3 class="post-title-trim">{post.title}</h3>
+								<div class="overall-badge" style={`border-color: ${health.overallScore >= 80 ? '#10b981' : '#f59e0b'}`}>
+									<span>{health.overallScore}</span>
+									<small>/100</small>
+								</div>
+							</div>
+
+							<div class="metric-bars">
+								<div class="metric-bar-row">
+									<span>SEO</span>
+									<div class="bar-track"><div class="bar-fill" style={`width: ${health.seo}%; background: #6366f1;`}></div></div>
+									<span class="bar-num">{health.seo}</span>
+								</div>
+								<div class="metric-bar-row">
+									<span>Content</span>
+									<div class="bar-track"><div class="bar-fill" style={`width: ${health.content}%; background: #10b981;`}></div></div>
+									<span class="bar-num">{health.content}</span>
+								</div>
+								<div class="metric-bar-row">
+									<span>Internal Links</span>
+									<div class="bar-track"><div class="bar-fill" style={`width: ${health.internalLinks}%; background: #06b6d4;`}></div></div>
+									<span class="bar-num">{health.internalLinks}</span>
+								</div>
+								<div class="metric-bar-row">
+									<span>Readability</span>
+									<div class="bar-track"><div class="bar-fill" style={`width: ${health.readability}%; background: #a855f7;`}></div></div>
+									<span class="bar-num">{health.readability}</span>
+								</div>
+								<div class="metric-bar-row">
+									<span>Freshness</span>
+									<div class="bar-track"><div class="bar-fill" style={`width: ${health.freshness}%; background: #f59e0b;`}></div></div>
+									<span class="bar-num">{health.freshness}</span>
+								</div>
+							</div>
+
+							{health.recommendations.length > 0 && (
+								<div class="health-recs">
+									<p class="rec-title">Saran Perbaikan:</p>
+									<ul class="rec-list">
+										{health.recommendations.map((r) => (
+											<li>• {r}</li>
+										))}
+									</ul>
+								</div>
+							)}
+						</div>
+					))}
+				</div>
+			</section>
+
+			<!-- Content Refresh Queue (PRD Feature 4) -->
+			<section class="glass-card refresh-queue-section mb-4">
+				<div class="card-title-row">
+					<span class="card-icon">🔄</span>
+					<h2>CONTENT REFRESH SYSTEM (Anti-Stale Monitoring)</h2>
+				</div>
+				<p class="card-lead">Aturan: Artikel &gt; 180 hari yang berisiko mengalami penurunan ranking perlu ditinjau ulang.</p>
+
+				<div class="refresh-list">
+					{refreshQueue.map((item) => (
+						<div class="refresh-item">
+							<div>
+								<div class="refresh-meta">
+									<span class="pill pill-cyan">Usia: {item.daysOld} hari</span>
+									<span class:list={['pill', item.urgency === 'HIGH' ? 'pill-red' : 'pill-yellow']}>
+										{item.urgency} PRIORITY
+									</span>
+								</div>
+								<h3 class="refresh-title">{item.post.title}</h3>
+								<p class="refresh-reason">{item.reason}</p>
+							</div>
+							<a href={`/blog/${item.post.slug}/`} target="_blank" class="btn btn-secondary btn-sm">
+								Review Artikel ↗
+							</a>
+						</div>
+					))}
+				</div>
+			</section>
+
+			<!-- Content Cluster Manager & Keyword Tracker (PRD Feature 5 & 6) -->
+			<div class="grid-2-custom mb-4">
+				<!-- Cluster Manager -->
+				<div class="glass-card intel-card">
+					<div class="card-title-row">
+						<span class="card-icon">🧠</span>
+						<h2>CONTENT CLUSTERS (Topical Authority)</h2>
+					</div>
+					<p class="card-lead">Tingkat kelengkapan sub-topik untuk setiap pilar teknologi.</p>
+
+					<div class="clusters-manager-list">
+						{clusterStats.map((cl) => (
+							<div class="cluster-manage-box">
+								<div class="cluster-top-row">
+									<strong>Pilar {cl.category}</strong>
+									<span class="pill pill-emerald">{cl.completenessPercent}% Complete</span>
+								</div>
+								<div class="cluster-progress-bar">
+									<div class="cluster-progress-fill" style={`width: ${cl.completenessPercent}%;`}></div>
+								</div>
+								<div class="cluster-subinfo">
+									<span>{cl.totalArticles} artikel terpublikasi</span>
+									{cl.missingTopics.length > 0 && (
+										<span class="text-amber">Gaps: {cl.missingTopics.join(', ')}</span>
+									)}
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+
+				<!-- Keyword Tracking -->
+				<div class="glass-card intel-card">
+					<div class="card-title-row">
+						<span class="card-icon">🔍</span>
+						<h2>KEYWORD TRACKING (Search Position Monitor)</h2>
+					</div>
+					<p class="card-lead">Target kata kunci organik Google dan posisi peringkat saat ini.</p>
+
+					<table class="kw-table">
+						<thead>
+							<tr>
+								<th>Keyword</th>
+								<th>Target</th>
+								<th>Current</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+							{keywords.map((kw) => (
+								<tr>
+									<td class="kw-name"><strong>{kw.keyword}</strong></td>
+									<td class="kw-pos">#{kw.target_position}</td>
+									<td class="kw-pos-curr">#{kw.current_position}</td>
+									<td>
+										<span class="pill pill-cyan">{kw.status}</span>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+
+<style>
+	.admin-body {
+		background: #080b12;
+		color: var(--text-primary);
+		min-height: 100vh;
+	}
+
+	.admin-topbar {
+		background: rgba(13, 18, 30, 0.9);
+		border-bottom: 1px solid var(--border-subtle);
+		padding: 0.85rem 2rem;
+		position: sticky;
+		top: 0;
+		z-index: 40;
+		backdrop-filter: blur(12px);
+	}
+
+	.topbar-inner {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.topbar-brand {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.brand-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #10b981;
+	}
+
+	.brand-name {
+		font-weight: 800;
+		font-size: 1.15rem;
+	}
+
+	.topbar-actions {
+		display: flex;
+		gap: 0.75rem;
+	}
+
+	.top-btn {
+		padding: 0.5rem 1rem;
+		font-size: 0.85rem;
+	}
+
+	.admin-container {
+		max-width: 1140px;
+		margin: 0 auto;
+		padding: 2.5rem 1.5rem 5rem;
+	}
+
+	.page-top {
+		margin-bottom: 2.5rem;
+	}
+
+	.page-title {
+		font-size: 2rem;
+		margin-bottom: 0.35rem;
+	}
+
+	.page-subtitle {
+		font-size: 1.05rem;
+		color: var(--text-secondary);
+	}
+
+	.mb-4 {
+		margin-bottom: 2.5rem;
+	}
+
+	.mt-2 {
+		margin-top: 0.75rem;
+	}
+
+	.grid-2-custom {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 2rem;
+	}
+
+	.intel-card {
+		padding: 2rem;
+	}
+
+	.card-title-row {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		margin-bottom: 0.35rem;
+	}
+
+	.card-title-row h2 {
+		font-size: 1.25rem;
+		margin: 0;
+	}
+
+	.card-icon {
+		font-size: 1.3rem;
+	}
+
+	.card-lead {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		margin-bottom: 1.5rem;
+		line-height: 1.5;
+	}
+
+	.opp-cards-list, .ideas-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.opp-box {
+		padding: 1.25rem;
+		border-radius: var(--radius-sm);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+	}
+
+	.opp-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.4rem;
+	}
+
+	.opp-title {
+		font-size: 1.1rem;
+		color: #ffffff;
+		margin: 0;
+	}
+
+	.opp-stats {
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		margin-bottom: 0.75rem;
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.opp-action-checklist {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+	}
+
+	.action-hint {
+		font-weight: 600;
+		color: var(--primary-light);
+		margin-bottom: 0.3rem;
+	}
+
+	.opp-action-checklist ul {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+	}
+
+	.btn-sm {
+		padding: 0.45rem 0.85rem;
+		font-size: 0.82rem;
+	}
+
+	.idea-item {
+		padding: 1.1rem;
+		border-radius: var(--radius-sm);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+	}
+
+	.idea-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.3rem;
+	}
+
+	.idea-top h4 {
+		font-size: 1rem;
+		color: #ffffff;
+		margin: 0;
+	}
+
+	.idea-item p {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		margin-bottom: 0.6rem;
+	}
+
+	.idea-action {
+		font-size: 0.82rem;
+		font-weight: 600;
+		color: var(--primary-light);
+	}
+
+	/* Health Score Section */
+	.health-score-section {
+		padding: 2rem;
+	}
+
+	.health-cards-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+		gap: 1.5rem;
+	}
+
+	.health-breakdown-card {
+		padding: 1.5rem;
+		border-radius: var(--radius-sm);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+	}
+
+	.breakdown-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 0.5rem;
+		margin-bottom: 1.25rem;
+	}
+
+	.post-title-trim {
+		font-size: 1rem;
+		color: #ffffff;
+		margin: 0;
+		line-height: 1.3;
+	}
+
+	.overall-badge {
+		width: 48px;
+		height: 48px;
+		border-radius: 50%;
+		border: 3px solid #10b981;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		font-weight: 800;
+		font-family: "Plus Jakarta Sans", sans-serif;
+		font-size: 1rem;
+		flex-shrink: 0;
+	}
+
+	.overall-badge small {
+		font-size: 0.55rem;
+		color: var(--text-muted);
+		margin-top: -3px;
+	}
+
+	.metric-bars {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-bottom: 1.25rem;
+	}
+
+	.metric-bar-row {
+		display: grid;
+		grid-template-columns: 85px 1fr 28px;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.78rem;
+		color: var(--text-secondary);
+	}
+
+	.bar-track {
+		height: 6px;
+		background: rgba(255, 255, 255, 0.08);
+		border-radius: var(--radius-full);
+		overflow: hidden;
+	}
+
+	.bar-fill {
+		height: 100%;
+		border-radius: var(--radius-full);
+	}
+
+	.bar-num {
+		font-family: "JetBrains Mono", monospace;
+		text-align: right;
+	}
+
+	.health-recs {
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--border-subtle);
+		font-size: 0.78rem;
+	}
+
+	.rec-title {
+		font-weight: 600;
+		color: var(--primary-light);
+		margin-bottom: 0.25rem;
+	}
+
+	.rec-list {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		color: var(--text-secondary);
+	}
+
+	/* Refresh Section */
+	.refresh-queue-section {
+		padding: 2rem;
+	}
+
+	.refresh-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.refresh-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1.25rem;
+		border-radius: var(--radius-sm);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.refresh-meta {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 0.35rem;
+	}
+
+	.pill-red {
+		background: rgba(239, 68, 68, 0.15);
+		color: #f87171;
+		border: 1px solid rgba(239, 68, 68, 0.3);
+	}
+
+	.pill-yellow {
+		background: rgba(245, 158, 11, 0.15);
+		color: #fbbf24;
+		border: 1px solid rgba(245, 158, 11, 0.3);
+	}
+
+	.refresh-title {
+		font-size: 1.1rem;
+		color: #ffffff;
+		margin-bottom: 0.25rem;
+	}
+
+	.refresh-reason {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+
+	/* Cluster Boxes */
+	.clusters-manager-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.cluster-manage-box {
+		padding: 1rem;
+		border-radius: var(--radius-sm);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+	}
+
+	.cluster-top-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.4rem;
+		font-size: 0.9rem;
+	}
+
+	.cluster-progress-bar {
+		height: 6px;
+		background: rgba(255, 255, 255, 0.06);
+		border-radius: var(--radius-full);
+		overflow: hidden;
+		margin-bottom: 0.5rem;
+	}
+
+	.cluster-progress-fill {
+		height: 100%;
+		background: var(--primary-gradient);
+		border-radius: var(--radius-full);
+	}
+
+	.cluster-subinfo {
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.text-amber {
+		color: #fbbf24;
+	}
+
+	/* Keyword Table */
+	.kw-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.88rem;
+	}
+
+	.kw-table th {
+		padding: 0.75rem 0.5rem;
+		color: var(--text-muted);
+		border-bottom: 1px solid var(--border-subtle);
+		font-size: 0.78rem;
+		text-transform: uppercase;
+		text-align: left;
+	}
+
+	.kw-table td {
+		padding: 0.75rem 0.5rem;
+		border-bottom: 1px solid var(--border-subtle);
+		color: var(--text-secondary);
+	}
+
+	.kw-name {
+		color: #ffffff;
+	}
+
+	.kw-pos, .kw-pos-curr {
+		font-family: "JetBrains Mono", monospace;
+	}
+
+	.kw-pos-curr {
+		color: #34d399;
+		font-weight: 600;
+	}
+
+	@media (max-width: 900px) {
+		.grid-2-custom {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

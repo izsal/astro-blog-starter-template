@@ -1,0 +1,169 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { SITE_TITLE, AUTHOR_NAME } from '../../consts';
+import { getD1Database } from '../../lib/db';
+import { getAllSeries } from '../../lib/series';
+
+const db = getD1Database(Astro.locals);
+const seriesList = await getAllSeries(db);
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`Content Series & Learning Paths — ${SITE_TITLE}`}
+			description="Kurikulum artikel berurutan dan terstruktur untuk menguasai teknologi modern dari dasar hingga production."
+		/>
+	</head>
+	<body>
+		<Header />
+
+		<main class="section">
+			<div class="container">
+				<div class="page-header">
+					<span class="pill pill-cyan mb-2">Curated Learning Paths</span>
+					<h1 class="page-title">Content Series</h1>
+					<p class="page-lead">
+						Kumpulan artikel yang disusun secara berurutan membentuk jalur pembelajaran tematik. Membantu pembaca mempelajari topik mendalam tanpa tersesat.
+					</p>
+				</div>
+
+				<div class="series-grid">
+					{seriesList.map((series) => (
+						<div class="series-card glass-card">
+							<div class="series-card-header">
+								<span class="pill pill-emerald">{series.posts.length} Parts</span>
+								<h2 class="series-title">
+									<a href={`/series/${series.slug}/`}>{series.title}</a>
+								</h2>
+							</div>
+							<p class="series-desc">{series.description}</p>
+
+							<div class="series-outline">
+								<h4 class="outline-heading">Kurikulum:</h4>
+								<ul class="outline-list">
+									{series.posts.map((post) => (
+										<li>
+											<span class="part-number">Part {post.position}:</span>
+											<a href={`/blog/${post.slug}/`}>{post.title}</a>
+										</li>
+									))}
+								</ul>
+							</div>
+
+							<div class="series-card-footer">
+								<a href={`/series/${series.slug}/`} class="btn btn-primary">
+									Mulai Belajar Series &rarr;
+								</a>
+							</div>
+						</div>
+					))}
+				</div>
+			</div>
+		</main>
+
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.page-header {
+		margin-bottom: 3.5rem;
+		max-width: 750px;
+	}
+
+	.page-title {
+		margin-bottom: 0.75rem;
+	}
+
+	.page-lead {
+		font-size: 1.15rem;
+		color: var(--text-secondary);
+		line-height: 1.7;
+	}
+
+	.series-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+		gap: 2rem;
+		margin-bottom: 4rem;
+	}
+
+	.series-card {
+		display: flex;
+		flex-direction: column;
+		padding: 2rem;
+	}
+
+	.series-card-header {
+		margin-bottom: 1rem;
+	}
+
+	.series-title {
+		font-size: 1.4rem;
+		margin-top: 0.6rem;
+		line-height: 1.3;
+	}
+
+	.series-title a {
+		color: #ffffff;
+	}
+
+	.series-title a:hover {
+		color: var(--primary-light);
+	}
+
+	.series-desc {
+		color: var(--text-secondary);
+		font-size: 0.95rem;
+		line-height: 1.6;
+		margin-bottom: 1.5rem;
+	}
+
+	.series-outline {
+		margin-bottom: 2rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--border-subtle);
+		flex: 1;
+	}
+
+	.outline-heading {
+		font-size: 0.88rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--text-muted);
+		margin-bottom: 0.75rem;
+	}
+
+	.outline-list {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		font-size: 0.9rem;
+	}
+
+	.part-number {
+		color: var(--primary-light);
+		font-weight: 600;
+		margin-right: 0.4rem;
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.8rem;
+	}
+
+	.outline-list a {
+		color: var(--text-secondary);
+	}
+
+	.outline-list a:hover {
+		color: #ffffff;
+	}
+
+	.series-card-footer {
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--border-subtle);
+	}
+</style>

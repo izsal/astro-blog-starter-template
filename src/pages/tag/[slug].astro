@@ -1,0 +1,132 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { SITE_TITLE } from '../../consts';
+import { getD1Database } from '../../lib/db';
+import { getTagBySlug } from '../../lib/tags';
+import { getUnifiedPosts } from '../../lib/posts';
+
+export async function getStaticPaths() {
+	return [
+		{ params: { slug: 'astro' } },
+		{ params: { slug: 'cloudflare' } },
+		{ params: { slug: 'typescript' } },
+		{ params: { slug: 'react' } },
+		{ params: { slug: 'docker' } },
+		{ params: { slug: 'linux' } },
+		{ params: { slug: 'laravel' } },
+		{ params: { slug: 'fastapi' } },
+		{ params: { slug: 'vue' } },
+	];
+}
+
+const { slug } = Astro.params;
+const db = getD1Database(Astro.locals);
+const tag = await getTagBySlug(db, slug || '');
+const allPosts = await getUnifiedPosts(db);
+const filteredPosts = allPosts.filter((p) =>
+	(p.tags || []).some((t) => t.toLowerCase() === (slug || '').toLowerCase())
+);
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`#${tag?.name || slug} — ${SITE_TITLE}`}
+			description={`Koleksi artikel dan panduan terkait tag #${tag?.name || slug}.`}
+		/>
+	</head>
+	<body>
+		<Header />
+
+		<main class="section">
+			<div class="container">
+				<div class="tag-header">
+					<div class="breadcrumb">
+						<a href="/">Home</a> / <a href="/blog">Blog</a> / <span>Tag</span>
+					</div>
+					<h1 class="page-title">
+						<span class="tag-hash">#</span>{tag?.name || slug}
+					</h1>
+					<p class="page-lead">
+						Ditemukan {filteredPosts.length} artikel dengan topik #{tag?.name || slug}.
+					</p>
+				</div>
+
+				<div class="grid-2 posts-grid">
+					{filteredPosts.length === 0 ? (
+						<div class="empty-box glass-card">
+							<p>Belum ada artikel yang ditandai dengan #{slug}.</p>
+							<a href="/blog" class="btn btn-primary">Kembali ke Blog &rarr;</a>
+						</div>
+					) : (
+						filteredPosts.map((post) => (
+							<a href={`/blog/${post.slug}/`} class="post-card">
+								<div class="post-card-meta">
+									<span>{new Date(post.published_at).toLocaleDateString('id-ID')}</span>
+									<span>•</span>
+									<span class="reading-time">{post.reading_time} min read</span>
+								</div>
+								<h3 class="post-card-title">{post.title}</h3>
+								<p class="post-card-desc">{post.excerpt}</p>
+								<div class="post-card-footer">
+									<span class="read-more">Baca Artikel &rarr;</span>
+									<span class="pill pill-cyan">#{slug}</span>
+								</div>
+							</a>
+						))
+					)}
+				</div>
+			</div>
+		</main>
+
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.tag-header {
+		margin-bottom: 3rem;
+		max-width: 750px;
+	}
+
+	.breadcrumb {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		margin-bottom: 1rem;
+	}
+
+	.breadcrumb a {
+		color: var(--text-secondary);
+	}
+
+	.breadcrumb span {
+		color: var(--primary-light);
+	}
+
+	.page-title {
+		margin-bottom: 0.5rem;
+	}
+
+	.tag-hash {
+		color: var(--primary-light);
+		margin-right: 0.2rem;
+	}
+
+	.page-lead {
+		font-size: 1.1rem;
+		color: var(--text-secondary);
+	}
+
+	.posts-grid {
+		margin-bottom: 4rem;
+	}
+
+	.empty-box {
+		grid-column: 1 / -1;
+		text-align: center;
+		padding: 3rem;
+	}
+</style>

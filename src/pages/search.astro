@@ -1,0 +1,236 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE } from '../consts';
+import { getD1Database } from '../lib/db';
+import { getUnifiedPosts } from '../lib/posts';
+
+const db = getD1Database(Astro.locals);
+const allPosts = await getUnifiedPosts(db);
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`Search Articles & Documentation — ${SITE_TITLE}`}
+			description="Cari artikel, tutorial, dan dokumentasi teknis di blog qblog secara instan."
+		/>
+	</head>
+	<body>
+		<Header />
+
+		<main class="section">
+			<div class="container search-container">
+				<div class="page-header">
+					<span class="pill pill-cyan mb-2">Instant Search</span>
+					<h1 class="page-title">Search Articles & Knowledge</h1>
+					<p class="page-lead">
+						Temukan topik, teknologi, atau masalah spesifik di seluruh artikel, content series, dan dokumentasi.
+					</p>
+
+					<div class="search-input-box">
+						<svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="11" cy="11" r="8"></circle>
+							<path d="m21 21-4.3-4.3"></path>
+						</svg>
+						<input
+							type="text"
+							id="search-input"
+							placeholder="Ketik topik (contoh: astro, cloudflare, docker, typescript)..."
+							autofocus
+							class="search-field"
+						/>
+					</div>
+
+					<div class="quick-keywords">
+						<span class="quick-label">Topik Populer:</span>
+						<button class="keyword-btn" data-query="astro">Astro</button>
+						<button class="keyword-btn" data-query="cloudflare">Cloudflare</button>
+						<button class="keyword-btn" data-query="docker">Docker</button>
+						<button class="keyword-btn" data-query="typescript">TypeScript</button>
+						<button class="keyword-btn" data-query="linux">Linux</button>
+					</div>
+				</div>
+
+				<div class="search-results-info">
+					<span id="results-count">Menampilkan semua artikel ({allPosts.length})</span>
+				</div>
+
+				<div class="grid-2 posts-grid" id="posts-grid">
+					{allPosts.map((post) => (
+						<a
+							href={`/blog/${post.slug}/`}
+							class="post-card search-card"
+							data-title={post.title.toLowerCase()}
+							data-desc={post.excerpt.toLowerCase()}
+							data-category={(post.category || '').toLowerCase()}
+							data-tags={(post.tags || []).join(' ').toLowerCase()}
+						>
+							<div class="post-card-meta">
+								<span>{new Date(post.published_at).toLocaleDateString('id-ID')}</span>
+								<span>•</span>
+								<span class="reading-time">{post.reading_time} min read</span>
+							</div>
+							<h3 class="post-card-title">{post.title}</h3>
+							<p class="post-card-desc">{post.excerpt}</p>
+							<div class="post-card-footer">
+								<span class="read-more">Baca Selengkapnya &rarr;</span>
+								<span class="pill pill-neutral">{post.category}</span>
+							</div>
+						</a>
+					))}
+				</div>
+			</div>
+		</main>
+
+		<Footer />
+
+		<script>
+			const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+			const cards = document.querySelectorAll<HTMLElement>('.search-card');
+			const countEl = document.getElementById('results-count');
+			const keywordBtns = document.querySelectorAll<HTMLButtonElement>('.keyword-btn');
+
+			function performSearch(query: string) {
+				const q = query.trim().toLowerCase();
+				let visibleCount = 0;
+
+				cards.forEach((card) => {
+					const title = card.dataset.title || '';
+					const desc = card.dataset.desc || '';
+					const cat = card.dataset.category || '';
+					const tags = card.dataset.tags || '';
+
+					if (!q || title.includes(q) || desc.includes(q) || cat.includes(q) || tags.includes(q)) {
+						card.style.display = 'flex';
+						visibleCount++;
+					} else {
+						card.style.display = 'none';
+					}
+				});
+
+				if (countEl) {
+					countEl.textContent = q
+						? `Ditemukan ${visibleCount} artikel untuk "${q}"`
+						: `Menampilkan semua artikel (${cards.length})`;
+				}
+			}
+
+			if (searchInput) {
+				searchInput.addEventListener('input', () => performSearch(searchInput.value));
+
+				// Check URL query param e.g. /search?q=astro
+				const params = new URLSearchParams(window.location.search);
+				const initialQ = params.get('q');
+				if (initialQ) {
+					searchInput.value = initialQ;
+					performSearch(initialQ);
+				}
+			}
+
+			keywordBtns.forEach((btn) => {
+				btn.addEventListener('click', () => {
+					const q = btn.dataset.query || '';
+					if (searchInput) {
+						searchInput.value = q;
+						performSearch(q);
+					}
+				});
+			});
+		</script>
+	</body>
+</html>
+
+<style>
+	.search-container {
+		max-width: 860px;
+	}
+
+	.page-header {
+		margin-bottom: 2.5rem;
+	}
+
+	.page-title {
+		margin-bottom: 0.75rem;
+	}
+
+	.page-lead {
+		font-size: 1.15rem;
+		color: var(--text-secondary);
+		line-height: 1.7;
+		margin-bottom: 2rem;
+	}
+
+	.search-input-box {
+		position: relative;
+		display: flex;
+		align-items: center;
+		margin-bottom: 1.25rem;
+	}
+
+	.search-icon {
+		position: absolute;
+		left: 1.25rem;
+		color: var(--text-muted);
+		pointer-events: none;
+	}
+
+	.search-field {
+		width: 100%;
+		padding: 1.1rem 1.25rem 1.1rem 3.2rem;
+		font-size: 1.05rem;
+		border-radius: var(--radius-md);
+		background: var(--bg-card);
+		border: 1px solid var(--border-subtle);
+		color: #ffffff;
+		outline: none;
+		transition: var(--transition-smooth);
+	}
+
+	.search-field:focus {
+		border-color: var(--primary);
+		box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
+	}
+
+	.quick-keywords {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.quick-label {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		font-weight: 500;
+	}
+
+	.keyword-btn {
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-full);
+		padding: 0.25rem 0.7rem;
+		color: var(--text-secondary);
+		font-size: 0.8rem;
+		cursor: pointer;
+		transition: var(--transition-smooth);
+	}
+
+	.keyword-btn:hover {
+		color: #ffffff;
+		border-color: var(--primary-light);
+		background: rgba(99, 102, 241, 0.15);
+	}
+
+	.search-results-info {
+		margin-bottom: 1.5rem;
+		font-size: 0.9rem;
+		color: var(--text-muted);
+	}
+
+	.posts-grid {
+		margin-bottom: 4rem;
+	}
+</style>

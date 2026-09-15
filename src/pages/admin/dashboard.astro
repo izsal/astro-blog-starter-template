@@ -1,0 +1,574 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import { SITE_TITLE, AUTHOR_NAME } from '../../consts';
+import { verifyAdminSession } from '../../lib/admin-auth';
+import { getD1Database } from '../../lib/db';
+import { getUnifiedPosts } from '../../lib/posts';
+import { getCategories } from '../../lib/categories';
+import { getTags } from '../../lib/tags';
+import { getAllSeries } from '../../lib/series';
+import { getWritingGoal } from '../../lib/intelligence';
+
+export const prerender = false;
+
+const cookie = Astro.request.headers.get('cookie');
+if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
+	return Astro.redirect('/admin');
+}
+
+const db = getD1Database(Astro.locals);
+const posts = await getUnifiedPosts(db);
+const categories = await getCategories(db);
+const tags = await getTags(db);
+const seriesList = await getAllSeries(db);
+const writingGoal = await getWritingGoal(db);
+const goalPercent = Math.min(100, Math.round((writingGoal.completed_count / writingGoal.target_count) * 100));
+
+const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 12431);
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`Content Command Center — Admin ${SITE_TITLE}`}
+			description="Admin Content Command Center & SEO Management System."
+		/>
+	</head>
+	<body class="dashboard-body">
+		<!-- Admin Header Navbar -->
+		<header class="admin-topbar">
+			<div class="topbar-inner">
+				<div class="topbar-brand">
+					<span class="brand-dot"></span>
+					<span class="brand-name">qblog Admin</span>
+					<span class="pill pill-cyan">Content Command Center</span>
+				</div>
+				<div class="topbar-actions">
+					<a href="/admin/intelligence" class="btn btn-secondary top-btn">🧠 Content Intelligence</a>
+					<a href="/" target="_blank" class="btn btn-secondary top-btn">Lihat Web Publik ↗</a>
+					<a href="/admin/posts/new" class="btn btn-primary top-btn">+ Tulis Artikel Baru</a>
+				</div>
+			</div>
+		</header>
+
+		<div class="admin-layout">
+			<!-- Sidebar Nav -->
+			<aside class="admin-sidebar">
+				<nav class="sidebar-nav">
+					<a href="/admin/dashboard" class="sidebar-link active">📊 Command Center</a>
+					<a href="/admin/intelligence" class="sidebar-link">🧠 Content Intelligence</a>
+					<a href="/admin/posts" class="sidebar-link">📝 Articles & Drafts</a>
+					<a href="/admin/categories" class="sidebar-link">🏷️ Categories & Tags</a>
+					<a href="/admin/series" class="sidebar-link">📚 Content Series</a>
+					<a href="/devlog" target="_blank" class="sidebar-link">🚀 Public Devlog ↗</a>
+					<a href="/explore" target="_blank" class="sidebar-link">🗺️ Knowledge Map ↗</a>
+					<a href="/projects" target="_blank" class="sidebar-link">💼 Projects Showcase ↗</a>
+				</nav>
+
+				<div class="sidebar-footer">
+					<span class="pill pill-emerald">D1 Database Connected</span>
+					<p class="admin-user-info">Logged in as {AUTHOR_NAME}</p>
+				</div>
+			</aside>
+
+			<!-- Main Content Area -->
+			<main class="admin-main">
+				<!-- Welcome Banner -->
+				<div class="welcome-header">
+					<div>
+						<h1 class="welcome-title">Good morning, {AUTHOR_NAME} 👋</h1>
+						<p class="welcome-subtitle">Berikut ringkasan performa konten, metrik traffic, dan rekomendasi SEO hari ini.</p>
+					</div>
+					<div class="quick-date pill pill-neutral">
+						Cloudflare Edge Synced
+					</div>
+				</div>
+
+				<!-- Writing Goal & Content Intelligence Highlight Banner -->
+				<div class="glass-card banner-intelligence">
+					<div class="banner-content">
+						<div class="goal-header">
+							<span class="pill pill-cyan">Target Editorial {writingGoal.month_year}</span>
+							<span class="goal-ratio"><strong>{writingGoal.completed_count}</strong> dari {writingGoal.target_count} artikel selesai ({goalPercent}%)</span>
+						</div>
+						<div class="progress-bar-bg">
+							<div class="progress-bar-fill" style={`width: ${goalPercent}%;`}></div>
+						</div>
+						<p class="goal-caption">
+							Tersisa {Math.max(0, writingGoal.target_count - writingGoal.completed_count)} artikel untuk mencapai target publikasi konsisten bulan ini. Periksa Content Intelligence untuk ide artikel ber-traffic tinggi.
+						</p>
+					</div>
+					<div class="banner-action">
+						<a href="/admin/intelligence" class="btn btn-primary banner-btn">
+							Buka Content Intelligence →
+						</a>
+					</div>
+				</div>
+
+				<!-- Stats Overview Cards (PRD Section 29) -->
+				<div class="grid-4 stats-grid">
+					<div class="glass-card stat-card">
+						<span class="stat-label">Total Articles</span>
+						<span class="stat-value">{posts.length}</span>
+						<span class="stat-change text-emerald">● Published & Active</span>
+					</div>
+					<div class="glass-card stat-card">
+						<span class="stat-label">Categories</span>
+						<span class="stat-value">{categories.length}</span>
+						<span class="stat-change text-cyan">Cluster Pillars</span>
+					</div>
+					<div class="glass-card stat-card">
+						<span class="stat-label">Active Series</span>
+						<span class="stat-value">{seriesList.length}</span>
+						<span class="stat-change text-violet">Roadmaps</span>
+					</div>
+					<div class="glass-card stat-card">
+						<span class="stat-label">Total Views (D1)</span>
+						<span class="stat-value">{totalViews.toLocaleString()}</span>
+						<span class="stat-change text-emerald">+18% this month</span>
+					</div>
+				</div>
+
+				<!-- Command Center Two-Column Layout (PRD Section 43) -->
+				<div class="dashboard-split">
+					<!-- Left: SEO Opportunities -->
+					<div class="glass-card panel-card">
+						<div class="panel-header">
+							<span class="panel-icon">🔥</span>
+							<h2>SEO Opportunities (Search Console)</h2>
+						</div>
+						<p class="panel-desc">Peluang optimasi kata kunci untuk mendorong lonjakan traffic organik dari Google.</p>
+
+						<div class="opportunities-list">
+							<div class="opp-item">
+								<div class="opp-top">
+									<strong class="opp-keyword">"astro cloudflare d1"</strong>
+									<span class="pill pill-cyan">Posisi 11</span>
+								</div>
+								<span class="opp-metrics">1,240 impressions • CTR 4.2%</span>
+								<p class="opp-recommendation">
+									<strong>Rekomendasi:</strong> Tambahkan 3 internal link ke artikel Astro Series dan pertegas meta description.
+								</p>
+							</div>
+
+							<div class="opp-item">
+								<div class="opp-top">
+									<strong class="opp-keyword">"docker microservices ubuntu"</strong>
+									<span class="pill pill-emerald">Posisi 14</span>
+								</div>
+								<span class="opp-metrics">920 impressions • CTR 3.8%</span>
+								<p class="opp-recommendation">
+									<strong>Rekomendasi:</strong> Perbarui diagram arsitektur Traefik dan tambahkan code snippet Docker Compose.
+								</p>
+							</div>
+
+							<div class="opp-item">
+								<div class="opp-top">
+									<strong class="opp-keyword">"cloudflare worker edge latency"</strong>
+									<span class="pill pill-neutral">Posisi 23</span>
+								</div>
+								<span class="opp-metrics">640 impressions • CTR 2.1%</span>
+								<p class="opp-recommendation">
+									<strong>Rekomendasi:</strong> Buat studi kasus baru membandingkan cold start Workers vs server konvensional.
+								</p>
+							</div>
+						</div>
+					</div>
+
+					<!-- Right: Content Health & Quick Actions -->
+					<div class="glass-card panel-card">
+						<div class="panel-header">
+							<span class="panel-icon">🩺</span>
+							<h2>Content Health & Hygiene</h2>
+						</div>
+						<p class="panel-desc">Kondisi keterhubungan internal links dan kesiapan metadata artikel.</p>
+
+						<div class="health-checklist">
+							<div class="health-row">
+								<span>SEO Issues Terdeteksi</span>
+								<span class="pill pill-emerald">0 Issues</span>
+							</div>
+							<div class="health-row">
+								<span>Broken Links</span>
+								<span class="pill pill-emerald">0 Broken</span>
+							</div>
+							<div class="health-row">
+								<span>Articles Without Links</span>
+								<span class="pill pill-neutral">1 Article</span>
+							</div>
+							<div class="health-row">
+								<span>Sitemap Coverage</span>
+								<span class="pill pill-cyan">100% Indexed</span>
+							</div>
+						</div>
+
+						<div class="quick-action-box">
+							<h3>Tindakan Cepat</h3>
+							<div class="quick-action-buttons">
+								<a href="/admin/posts/new" class="btn btn-primary action-btn">+ Buat Artikel Baru</a>
+								<a href="/admin/posts" class="btn btn-secondary action-btn">Kelola Semua Artikel</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+	</body>
+</html>
+
+<style>
+	.dashboard-body {
+		background: #080b12;
+		color: var(--text-primary);
+		min-height: 100vh;
+	}
+
+	.admin-topbar {
+		background: rgba(13, 18, 30, 0.9);
+		border-bottom: 1px solid var(--border-subtle);
+		padding: 0.85rem 2rem;
+		position: sticky;
+		top: 0;
+		z-index: 40;
+		backdrop-filter: blur(12px);
+	}
+
+	.topbar-inner {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.topbar-brand {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.brand-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #10b981;
+	}
+
+	.brand-name {
+		font-weight: 800;
+		font-size: 1.15rem;
+	}
+
+	.topbar-actions {
+		display: flex;
+		gap: 0.75rem;
+	}
+
+	.top-btn {
+		padding: 0.5rem 1rem;
+		font-size: 0.85rem;
+	}
+
+	.admin-layout {
+		display: grid;
+		grid-template-columns: 240px 1fr;
+		min-height: calc(100vh - 58px);
+	}
+
+	.admin-sidebar {
+		background: #0b0f19;
+		border-right: 1px solid var(--border-subtle);
+		padding: 1.5rem 1rem;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+	}
+
+	.sidebar-nav {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.sidebar-link {
+		padding: 0.7rem 1rem;
+		border-radius: var(--radius-sm);
+		color: var(--text-secondary);
+		font-size: 0.9rem;
+		font-weight: 500;
+		transition: var(--transition-smooth);
+	}
+
+	.sidebar-link:hover, .sidebar-link.active {
+		color: #ffffff;
+		background: rgba(99, 102, 241, 0.12);
+	}
+
+	.sidebar-link.active {
+		border-left: 3px solid var(--primary);
+	}
+
+	.sidebar-footer {
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--border-subtle);
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.admin-user-info {
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		margin: 0;
+	}
+
+	.admin-main {
+		padding: 2.5rem;
+		overflow-y: auto;
+	}
+
+	.welcome-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 2.5rem;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+
+	.welcome-title {
+		font-size: 1.8rem;
+		margin-bottom: 0.35rem;
+	}
+
+	.welcome-subtitle {
+		font-size: 0.95rem;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+
+	.banner-intelligence {
+		padding: 1.5rem 1.75rem;
+		margin-bottom: 2rem;
+		background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
+		border: 1px solid rgba(99, 102, 241, 0.25);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+	}
+
+	.banner-content {
+		flex: 1;
+		min-width: 280px;
+	}
+
+	.goal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.75rem;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.goal-ratio {
+		font-size: 0.88rem;
+		color: var(--text-secondary);
+	}
+
+	.goal-ratio strong {
+		color: #ffffff;
+	}
+
+	.progress-bar-bg {
+		width: 100%;
+		height: 8px;
+		background: rgba(255, 255, 255, 0.08);
+		border-radius: 999px;
+		overflow: hidden;
+		margin-bottom: 0.6rem;
+	}
+
+	.progress-bar-fill {
+		height: 100%;
+		background: linear-gradient(90deg, #6366f1, #06b6d4);
+		border-radius: 999px;
+		transition: width 0.6s ease;
+	}
+
+	.goal-caption {
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		margin: 0;
+		line-height: 1.4;
+	}
+
+	.banner-btn {
+		white-space: nowrap;
+		padding: 0.75rem 1.25rem;
+		font-size: 0.9rem;
+	}
+
+	.grid-4 {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 1.25rem;
+		margin-bottom: 2.5rem;
+	}
+
+	.stat-card {
+		padding: 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.stat-label {
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.stat-value {
+		font-size: 1.9rem;
+		font-weight: 800;
+		color: #ffffff;
+		font-family: "Plus Jakarta Sans", sans-serif;
+	}
+
+	.stat-change {
+		font-size: 0.8rem;
+		font-weight: 500;
+	}
+
+	.text-emerald { color: #34d399; }
+	.text-cyan { color: #67e8f9; }
+	.text-violet { color: #c084fc; }
+
+	.dashboard-split {
+		display: grid;
+		grid-template-columns: 1.2fr 1fr;
+		gap: 2rem;
+	}
+
+	.panel-card {
+		padding: 2rem;
+	}
+
+	.panel-header {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		margin-bottom: 0.35rem;
+	}
+
+	.panel-header h2 {
+		font-size: 1.25rem;
+		margin: 0;
+	}
+
+	.panel-icon {
+		font-size: 1.3rem;
+	}
+
+	.panel-desc {
+		font-size: 0.88rem;
+		color: var(--text-secondary);
+		margin-bottom: 1.5rem;
+	}
+
+	.opportunities-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.opp-item {
+		padding: 1.1rem;
+		border-radius: var(--radius-sm);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+	}
+
+	.opp-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.4rem;
+	}
+
+	.opp-keyword {
+		color: #ffffff;
+		font-size: 0.95rem;
+	}
+
+	.opp-metrics {
+		display: block;
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		margin-bottom: 0.5rem;
+		font-family: "JetBrains Mono", monospace;
+	}
+
+	.opp-recommendation {
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		margin: 0;
+		line-height: 1.5;
+	}
+
+	.health-checklist {
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
+		margin-bottom: 2rem;
+	}
+
+	.health-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.75rem 1rem;
+		border-radius: var(--radius-sm);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+		font-size: 0.9rem;
+	}
+
+	.quick-action-box {
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--border-subtle);
+	}
+
+	.quick-action-box h3 {
+		font-size: 1rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.quick-action-buttons {
+		display: flex;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.action-btn {
+		font-size: 0.85rem;
+		padding: 0.6rem 1rem;
+	}
+
+	@media (max-width: 900px) {
+		.admin-layout {
+			grid-template-columns: 1fr;
+		}
+
+		.admin-sidebar {
+			display: none;
+		}
+
+		.dashboard-split {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

@@ -1,0 +1,780 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import { SITE_TITLE } from '../../../consts';
+import { verifyAdminSession } from '../../../lib/admin-auth';
+import { getD1Database } from '../../../lib/db';
+import { getCategories } from '../../../lib/categories';
+import { getUnifiedPosts } from '../../../lib/posts';
+
+export const prerender = false;
+
+const cookie = Astro.request.headers.get('cookie');
+if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
+	return Astro.redirect('/admin');
+}
+
+const db = getD1Database(Astro.locals);
+const categories = await getCategories(db);
+const rawPosts = await getUnifiedPosts(db);
+const existingPosts = rawPosts.map((p) => ({
+	title: p.title,
+	slug: p.slug,
+	category: p.category || '',
+	tags: p.tags || [],
+}));
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`Tulis Artikel Baru — Admin ${SITE_TITLE}`}
+			description="Editor artikel dengan real-time SEO score checker."
+		/>
+	</head>
+	<body class="admin-body">
+		<div class="editor-container">
+			<div class="editor-top">
+				<a href="/admin/posts" class="back-link">&larr; Batal & Kembali</a>
+				<h1 class="page-title">Tulis Artikel Baru (D1 Database)</h1>
+			</div>
+
+			<div class="editor-layout">
+				<!-- Left Column: Article Form -->
+				<div class="form-column">
+					<form id="post-editor-form" class="editor-form glass-card">
+						<div class="form-group">
+							<label for="post-title">Judul Artikel (Title)</label>
+							<input
+								type="text"
+								id="post-title"
+								placeholder="Contoh: Cara Deploy Astro 5 ke Cloudflare D1"
+								required
+								class="input-field"
+							/>
+						</div>
+
+						<div class="form-group">
+							<label for="post-slug">URL Slug</label>
+							<input
+								type="text"
+								id="post-slug"
+								placeholder="cara-deploy-astro-cloudflare-d1"
+								required
+								class="input-field mono-field"
+							/>
+						</div>
+
+						<div class="form-row">
+							<div class="form-group">
+								<label for="post-category">Kategori</label>
+								<select id="post-category" class="input-field select-field">
+									{categories.map((c) => (
+										<option value={c.id}>{c.name}</option>
+									))}
+								</select>
+							</div>
+
+							<div class="form-group">
+								<label for="post-status">Status</label>
+								<select id="post-status" class="input-field select-field">
+									<option value="PUBLISHED">PUBLISHED</option>
+									<option value="DRAFT">DRAFT</option>
+								</select>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="post-excerpt">Excerpt / Meta Description</label>
+							<textarea
+								id="post-excerpt"
+								rows="3"
+								placeholder="Deskripsi singkat yang memikat untuk hasil pencarian Google..."
+								required
+								class="input-field"
+							></textarea>
+						</div>
+
+						<div class="form-group">
+							<label for="post-content">Konten Artikel (Markdown)</label>
+							<textarea
+								id="post-content"
+								rows="14"
+								placeholder="# Tulis artikel Anda di sini menggunakan Markdown..."
+								required
+								class="input-field content-textarea"
+							></textarea>
+						</div>
+
+						<button type="submit" class="btn btn-primary submit-btn" id="save-post-btn">
+							Simpan & Publikasikan ke Cloudflare D1
+						</button>
+
+						<p id="save-status" class="status-msg"></p>
+					</form>
+				</div>
+
+				<!-- Right Column: Realtime SEO Score Checker (PRD Section 10) -->
+				<div class="seo-column">
+					<div class="glass-card seo-panel">
+						<div class="seo-score-circle" id="score-circle">
+							<span class="score-number" id="score-val">0</span>
+							<span class="score-text">SEO SCORE</span>
+						</div>
+
+						<h3 class="checklist-title">Realtime SEO Checklist</h3>
+						<div class="checklist-items">
+							<div class="check-item" id="chk-title">
+								<span class="chk-icon">○</span>
+								<span>Panjang judul optimal (40-70 karakter)</span>
+							</div>
+							<div class="check-item" id="chk-slug">
+								<span class="chk-icon">○</span>
+								<span>Format URL slug bersih & ringkas</span>
+							</div>
+							<div class="check-item" id="chk-desc">
+								<span class="chk-icon">○</span>
+								<span>Meta description memadai (80-160 karakter)</span>
+							</div>
+							<div class="check-item" id="chk-h1">
+								<span class="chk-icon">○</span>
+								<span>Memiliki Heading # H1</span>
+							</div>
+							<div class="check-item" id="chk-words">
+								<span class="chk-icon">○</span>
+								<span>Panjang artikel memadai (>150 kata)</span>
+							</div>
+							<div class="check-item" id="chk-links">
+								<span class="chk-icon">○</span>
+								<span>Memiliki internal/external links</span>
+							</div>
+						</div>
+
+						<div class="seo-hints-box" id="seo-hints">
+							<strong>Saran:</strong> Mulai ketik judul dan konten untuk melihat skor SEO Anda.
+						</div>
+					</div>
+
+					<!-- Smart Internal Linking Suggestion Engine (PRD Section 43) -->
+					<div class="glass-card link-panel">
+						<div class="link-panel-header">
+							<div class="link-title-group">
+								<span class="panel-icon">🔗</span>
+								<h3 class="link-panel-title">Smart Link Suggestions</h3>
+							</div>
+							<span class="pill pill-cyan">Intelligence</span>
+						</div>
+						<p class="link-panel-desc">
+							Rekomendasi tautan internal cerdas berdasarkan konteks tulisan untuk memperkuat Topic Clustering & SEO authority.
+						</p>
+
+						<div id="link-suggestions-list" class="suggestions-list">
+							<p class="empty-suggestions">Ketik konten artikel untuk mendapatkan rekomendasi tautan internal...</p>
+						</div>
+					</div>
+
+					<!-- Hidden payload of existing articles for instant client matching -->
+					<script id="existing-posts-data" type="application/json" set:html={JSON.stringify(existingPosts)} />
+				</div>
+			</div>
+		</div>
+
+		<script>
+			const titleInput = document.getElementById('post-title') as HTMLInputElement | null;
+			const slugInput = document.getElementById('post-slug') as HTMLInputElement | null;
+			const excerptInput = document.getElementById('post-excerpt') as HTMLTextAreaElement | null;
+			const contentInput = document.getElementById('post-content') as HTMLTextAreaElement | null;
+			const categorySelect = document.getElementById('post-category') as HTMLSelectElement | null;
+			const statusSelect = document.getElementById('post-status') as HTMLSelectElement | null;
+
+			const scoreVal = document.getElementById('score-val');
+			const scoreCircle = document.getElementById('score-circle');
+			const hintsBox = document.getElementById('seo-hints');
+
+			const chkTitle = document.getElementById('chk-title');
+			const chkSlug = document.getElementById('chk-slug');
+			const chkDesc = document.getElementById('chk-desc');
+			const chkH1 = document.getElementById('chk-h1');
+			const chkWords = document.getElementById('chk-words');
+			const chkLinks = document.getElementById('chk-links');
+
+			// Auto slug generator from title
+			if (titleInput && slugInput) {
+				titleInput.addEventListener('input', () => {
+					if (!slugInput.dataset.manual) {
+						slugInput.value = titleInput.value
+							.toLowerCase()
+							.replace(/[^a-z0-9]+/g, '-')
+							.replace(/(^-|-$)+/g, '');
+					}
+					updateSeoScore();
+				});
+
+				slugInput.addEventListener('input', () => {
+					slugInput.dataset.manual = 'true';
+					updateSeoScore();
+				});
+			}
+
+			if (excerptInput) excerptInput.addEventListener('input', updateSeoScore);
+			if (contentInput) contentInput.addEventListener('input', updateSeoScore);
+
+			function updateSeoScore() {
+				const title = titleInput?.value || '';
+				const slug = slugInput?.value || '';
+				const desc = excerptInput?.value || '';
+				const content = contentInput?.value || '';
+
+				let score = 0;
+				const hints: string[] = [];
+
+				// 1. Title Length
+				if (title.length >= 35 && title.length <= 75) {
+					score += 20;
+					setCheck(chkTitle, true);
+				} else {
+					setCheck(chkTitle, false);
+					if (title.length < 35) hints.push('Judul terlalu pendek untuk SEO Google.');
+				}
+
+				// 2. Slug
+				if (slug.length >= 5 && /^[a-z0-9-]+$/.test(slug)) {
+					score += 15;
+					setCheck(chkSlug, true);
+				} else {
+					setCheck(chkSlug, false);
+				}
+
+				// 3. Description
+				if (desc.length >= 70 && desc.length <= 180) {
+					score += 20;
+					setCheck(chkDesc, true);
+				} else {
+					setCheck(chkDesc, false);
+					if (desc.length < 70) hints.push('Meta description terlalu pendek (disarankan 80-160 karakter).');
+				}
+
+				// 4. H1
+				if (/^#\s+.+/m.test(content)) {
+					score += 15;
+					setCheck(chkH1, true);
+				} else {
+					setCheck(chkH1, false);
+					hints.push('Tambahkan heading # H1 di dalam konten.');
+				}
+
+				// 5. Words
+				const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+				if (wordCount >= 150) {
+					score += 15;
+					setCheck(chkWords, true);
+				} else {
+					setCheck(chkWords, false);
+					hints.push(`Jumlah kata saat ini: ${wordCount}. Target minimal: 150 kata.`);
+				}
+
+				// 6. Links
+				if (/\[.+\]\(.+\)/.test(content)) {
+					score += 15;
+					setCheck(chkLinks, true);
+				} else {
+					setCheck(chkLinks, false);
+					hints.push('Tambahkan setidaknya 1 internal link ke artikel lain.');
+				}
+
+				if (scoreVal) scoreVal.textContent = String(score);
+				if (scoreCircle) {
+					scoreCircle.style.borderColor = score >= 80 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+				}
+
+				if (hintsBox) {
+					hintsBox.innerHTML = hints.length
+						? '<strong>Rekomendasi SEO:</strong><br/>• ' + hints.join('<br/>• ')
+						: '<strong style="color: #34d399;">✓ Kriteria SEO terpenuhi dengan sangat baik!</strong>';
+				}
+
+				updateSmartSuggestions();
+			}
+
+			function setCheck(el: HTMLElement | null, pass: boolean) {
+				if (!el) return;
+				const icon = el.querySelector('.chk-icon');
+				if (icon) {
+					icon.textContent = pass ? '✓' : '○';
+					(icon as HTMLElement).style.color = pass ? '#10b981' : 'var(--text-muted)';
+				}
+				el.style.color = pass ? '#ffffff' : 'var(--text-secondary)';
+			}
+
+			// --- Smart Internal Linking Engine (Client-side) ---
+			const rawPostsJson = document.getElementById('existing-posts-data')?.textContent;
+			const candidatePosts: Array<{ title: string; slug: string; category: string; tags: string[] }> =
+				rawPostsJson ? JSON.parse(rawPostsJson) : [];
+			const suggestionsList = document.getElementById('link-suggestions-list');
+
+			function updateSmartSuggestions() {
+				if (!suggestionsList || candidatePosts.length === 0) return;
+				const content = (contentInput?.value || '').toLowerCase();
+				const title = (titleInput?.value || '').toLowerCase();
+				const combined = `${title} ${content}`;
+
+				if (combined.trim().length < 15) {
+					suggestionsList.innerHTML = '<p class="empty-suggestions">Ketik lebih banyak konten untuk melihat saran internal links...</p>';
+					return;
+				}
+
+				const matches: Array<{ post: typeof candidatePosts[0]; matchedBy: string; isLinked: boolean; score: number }> = [];
+
+				candidatePosts.forEach((p) => {
+					const isLinked = content.includes(`/blog/${p.slug}`) || content.includes(p.slug);
+					let score = 0;
+					let matchReason = '';
+
+					// 1. Check title keyword matching
+					const pTitleLower = p.title.toLowerCase();
+					if (combined.includes(pTitleLower)) {
+						score += 50;
+						matchReason = 'Judul artikel cocok persis';
+					} else {
+						const words = pTitleLower.split(/\s+/).filter((w) => w.length > 3);
+						const matchedWords = words.filter((w) => combined.includes(w));
+						if (matchedWords.length >= 2) {
+							score += matchedWords.length * 12;
+							matchReason = `Keyword: "${matchedWords.slice(0, 2).join(', ')}"`;
+						}
+					}
+
+					// 2. Check tags matching
+					(p.tags || []).forEach((tag) => {
+						if (tag && combined.includes(tag.toLowerCase())) {
+							score += 20;
+							if (!matchReason) matchReason = `Topik tag: "${tag}"`;
+						}
+					});
+
+					// 3. Category matching
+					if (p.category && combined.includes(p.category.toLowerCase())) {
+						score += 10;
+					}
+
+					if (score > 0) {
+						matches.push({ post: p, matchedBy: matchReason || 'Topik relevan', isLinked, score });
+					}
+				});
+
+				matches.sort((a, b) => b.score - a.score);
+				const topMatches = matches.slice(0, 4);
+
+				if (topMatches.length === 0) {
+					suggestionsList.innerHTML = '<p class="empty-suggestions">Belum ada artikel relevan yang cocok dengan topik ini.</p>';
+					return;
+				}
+
+				suggestionsList.innerHTML = topMatches
+					.map(
+						(m) => `
+					<div class="suggestion-item">
+						<div class="suggestion-top">
+							<strong class="suggestion-title">${escapeHtml(m.post.title)}</strong>
+							${
+								m.isLinked
+									? '<span class="pill pill-emerald pill-xs">Tertaut ✓</span>'
+									: `<button type="button" class="btn-insert-link" data-slug="${m.post.slug}" data-title="${escapeHtml(m.post.title)}">+ Sisipkan Link</button>`
+							}
+						</div>
+						<div class="suggestion-meta">
+							<span class="suggestion-reason">${m.matchedBy}</span>
+							<span class="suggestion-cat">${m.post.category}</span>
+						</div>
+					</div>
+				`
+					)
+					.join('');
+
+				suggestionsList.querySelectorAll('.btn-insert-link').forEach((btn) => {
+					btn.addEventListener('click', () => {
+						const linkTitle = btn.getAttribute('data-title') || '';
+						const linkSlug = btn.getAttribute('data-slug') || '';
+						insertInternalLink(linkTitle, linkSlug);
+					});
+				});
+			}
+
+			function escapeHtml(str: string) {
+				return str.replace(/[&<>"']/g, (m) => ({
+					'&': '&amp;',
+					'<': '&lt;',
+					'>': '&gt;',
+					'"': '&quot;',
+					"'": '&#39;',
+				}[m] || m));
+			}
+
+			function insertInternalLink(title: string, slug: string) {
+				if (!contentInput) return;
+				const linkMd = `[${title}](/blog/${slug})`;
+				const start = contentInput.selectionStart;
+				const end = contentInput.selectionEnd;
+				const text = contentInput.value;
+
+				if (start !== undefined && end !== undefined && start !== end) {
+					const selected = text.substring(start, end);
+					contentInput.value = text.substring(0, start) + `[${selected}](/blog/${slug})` + text.substring(end);
+				} else if (start !== undefined) {
+					contentInput.value = text.substring(0, start) + linkMd + text.substring(start);
+				} else {
+					contentInput.value += `\n${linkMd}\n`;
+				}
+
+				contentInput.focus();
+				updateSeoScore();
+			}
+
+			// Form submission
+			const form = document.getElementById('post-editor-form') as HTMLFormElement | null;
+			const submitBtn = document.getElementById('save-post-btn') as HTMLButtonElement | null;
+			const statusEl = document.getElementById('save-status');
+
+			if (form && submitBtn && statusEl) {
+				form.addEventListener('submit', async (e) => {
+					e.preventDefault();
+					submitBtn.disabled = true;
+					statusEl.textContent = 'Menyimpan artikel ke Cloudflare D1...';
+					statusEl.className = 'status-msg info';
+
+					const payload = {
+						title: titleInput?.value.trim(),
+						slug: slugInput?.value.trim(),
+						excerpt: excerptInput?.value.trim(),
+						content: contentInput?.value.trim(),
+						category_id: categorySelect?.value,
+						status: statusSelect?.value || 'PUBLISHED',
+					};
+
+					try {
+						const res = await fetch('/admin/api/posts', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify(payload),
+						});
+
+						const data = await res.json();
+						if (res.ok && data.success) {
+							statusEl.textContent = '✓ Artikel berhasil disimpan ke Cloudflare D1!';
+							statusEl.className = 'status-msg success';
+							setTimeout(() => {
+								window.location.href = '/admin/posts';
+							}, 1200);
+						} else {
+							statusEl.textContent = '✕ Gagal menyimpan: ' + (data.error || 'Server error');
+							statusEl.className = 'status-msg error';
+							submitBtn.disabled = false;
+						}
+					} catch (err) {
+						statusEl.textContent = '✕ Terjadi kesalahan koneksi.';
+						statusEl.className = 'status-msg error';
+						submitBtn.disabled = false;
+					}
+				});
+			}
+		</script>
+	</body>
+</html>
+
+<style>
+	.admin-body {
+		background: #080b12;
+		color: var(--text-primary);
+		min-height: 100vh;
+		padding: 2.5rem 1.5rem;
+	}
+
+	.editor-container {
+		max-width: 1100px;
+		margin: 0 auto;
+	}
+
+	.editor-top {
+		margin-bottom: 2rem;
+	}
+
+	.back-link {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		display: inline-block;
+		margin-bottom: 0.5rem;
+	}
+
+	.page-title {
+		font-size: 1.8rem;
+		margin: 0;
+	}
+
+	.editor-layout {
+		display: grid;
+		grid-template-columns: 1.6fr 1fr;
+		gap: 2rem;
+		align-items: start;
+	}
+
+	.editor-form {
+		padding: 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.45rem;
+	}
+
+	.form-group label {
+		font-size: 0.88rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.input-field {
+		padding: 0.8rem 1rem;
+		border-radius: var(--radius-sm);
+		background: #0d121f;
+		border: 1px solid var(--border-subtle);
+		color: #ffffff;
+		font-size: 0.95rem;
+		outline: none;
+		transition: var(--transition-smooth);
+	}
+
+	.input-field:focus {
+		border-color: var(--primary);
+		box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+	}
+
+	.mono-field {
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.9rem;
+	}
+
+	.form-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+
+	.select-field {
+		cursor: pointer;
+	}
+
+	.content-textarea {
+		font-family: "JetBrains Mono", monospace;
+		line-height: 1.6;
+		resize: vertical;
+	}
+
+	.submit-btn {
+		margin-top: 0.5rem;
+		padding: 0.9rem;
+		font-size: 1rem;
+	}
+
+	.status-msg {
+		font-size: 0.88rem;
+		text-align: center;
+		min-height: 1.2rem;
+		margin: 0;
+	}
+
+	.status-msg.success { color: #34d399; }
+	.status-msg.error { color: #f87171; }
+	.status-msg.info { color: #93c5fd; }
+
+	/* SEO Panel */
+	.seo-panel {
+		padding: 2rem;
+		position: sticky;
+		top: 2rem;
+	}
+
+	.seo-score-circle {
+		width: 120px;
+		height: 120px;
+		border-radius: 50%;
+		border: 6px solid #ef4444;
+		margin: 0 auto 1.75rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		transition: border-color 0.3s ease;
+	}
+
+	.score-number {
+		font-size: 2.2rem;
+		font-weight: 800;
+		color: #ffffff;
+		font-family: "Plus Jakarta Sans", sans-serif;
+		line-height: 1;
+	}
+
+	.score-text {
+		font-size: 0.68rem;
+		color: var(--text-muted);
+		letter-spacing: 0.08em;
+		margin-top: 0.2rem;
+	}
+
+	.checklist-title {
+		font-size: 1.05rem;
+		margin-bottom: 1rem;
+		border-bottom: 1px solid var(--border-subtle);
+		padding-bottom: 0.5rem;
+	}
+
+	.checklist-items {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.check-item {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+	}
+
+	.chk-icon {
+		font-weight: 700;
+		font-family: "JetBrains Mono", monospace;
+		width: 16px;
+	}
+
+	.seo-hints-box {
+		padding: 1rem;
+		border-radius: var(--radius-sm);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+		font-size: 0.82rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+	}
+
+	/* Smart Link Suggestions Panel */
+	.link-panel {
+		margin-top: 1.5rem;
+		padding: 1.5rem;
+	}
+
+	.link-panel-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.5rem;
+	}
+
+	.link-title-group {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.link-panel-title {
+		font-size: 1.05rem;
+		margin: 0;
+	}
+
+	.link-panel-desc {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		margin-bottom: 1rem;
+		line-height: 1.4;
+	}
+
+	.suggestions-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.empty-suggestions {
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		font-style: italic;
+		margin: 0;
+	}
+
+	.suggestion-item {
+		padding: 0.75rem 0.85rem;
+		border-radius: var(--radius-sm);
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.suggestion-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 0.5rem;
+	}
+
+	.suggestion-title {
+		font-size: 0.85rem;
+		color: #ffffff;
+		line-height: 1.3;
+	}
+
+	.btn-insert-link {
+		background: rgba(99, 102, 241, 0.15);
+		border: 1px solid rgba(99, 102, 241, 0.35);
+		color: #a5b4fc;
+		padding: 0.25rem 0.6rem;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: var(--transition-smooth);
+	}
+
+	.btn-insert-link:hover {
+		background: var(--primary);
+		color: #ffffff;
+	}
+
+	.pill-xs {
+		font-size: 0.7rem;
+		padding: 0.15rem 0.5rem;
+	}
+
+	.suggestion-meta {
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.75rem;
+		color: var(--text-muted);
+	}
+
+	.suggestion-reason {
+		color: #38bdf8;
+	}
+
+	.suggestion-cat {
+		opacity: 0.7;
+	}
+
+	@media (max-width: 860px) {
+		.editor-layout {
+			grid-template-columns: 1fr;
+		}
+
+		.seo-panel {
+			position: static;
+		}
+	}
+</style>

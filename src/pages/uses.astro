@@ -1,0 +1,172 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { AUTHOR_NAME, SITE_TITLE } from '../consts';
+
+const hardware = [
+	{ name: 'MacBook Pro M-Series', desc: 'Mesin utama untuk development harian, kompilasi cepat, dan daya tahan baterai luar biasa.' },
+	{ name: 'External 4K Monitor 27"', desc: 'Ruang kerja luas untuk multi-window code editor, terminal, dan browser developer tools.' },
+	{ name: 'Mechanical Keyboard (Custom)', desc: 'Taktil switch yang nyaman untuk sesi coding dan penulisan artikel berjam-jam.' },
+	{ name: 'Ergonomic Mouse & Desk Mat', desc: 'Menjaga kenyamanan pergelangan tangan sepanjang hari kerja.' },
+];
+
+const software = [
+	{ name: 'VS Code & Antigravity IDE', desc: 'Editor kode utama dengan konfigurasi ekstensi minimalis dan dark theme.' },
+	{ name: 'Ghostty / iTerm2 & Zsh', desc: 'Terminal emulator cepat bertenaga GPU dengan fzf search dan oh-my-zsh prompt.' },
+	{ name: 'Docker Desktop / Colima', desc: 'Menjalankan container database lokal, Redis, dan pengujian isolated environment.' },
+	{ name: 'TablePlus & D1 Studio', desc: 'GUI database client untuk query SQLite D1, PostgreSQL, dan Redis.' },
+	{ name: 'Obsidian & Notion', desc: 'Tempat mencatat ide mentah, konsep arsitektur, dan outline artikel blog.' },
+];
+
+const developmentStack = [
+	{ name: 'Astro 5', desc: 'Framework static/SSR favorit untuk website berkinerja tinggi tanpa JavaScript bloat.' },
+	{ name: 'TypeScript', desc: 'Standar utama untuk seluruh basis kode demi keandalan dan kenyamanan refactoring.' },
+	{ name: 'Cloudflare Workers & D1', desc: 'Platform serverless andalan untuk komputasi edge dan database SQLite terdistribusi.' },
+	{ name: 'Tailwind CSS & Vanilla CSS', desc: 'Pilihan styling untuk antarmuka yang presisi, ringan, dan modern.' },
+	{ name: 'FastAPI & Laravel', desc: 'Pilihan framework backend saat membangun API intensif atau aplikasi monolitik.' },
+];
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`Hardware & Software I Use — ${AUTHOR_NAME}`}
+			description="Daftar perangkat keras, aplikasi, dan stack teknologi yang saya gunakan sehari-hari untuk produktivitas dan coding."
+		/>
+	</head>
+	<body>
+		<Header />
+
+		<main class="section">
+			<div class="container uses-container">
+				<div class="page-header">
+					<span class="pill pill-cyan mb-2">Workspace & Gear</span>
+					<h1 class="page-title">Tools, Hardware & Software I Use</h1>
+					<p class="page-lead">
+						Daftar lengkap perangkat keras, software, dan teknologi yang saya percayai untuk merancang sistem, menulis kode, dan menunjang produktivitas setiap hari.
+					</p>
+				</div>
+
+				<div class="uses-groups">
+					<!-- Hardware -->
+					<section class="gear-section">
+						<div class="section-title-wrap">
+							<span class="gear-icon">💻</span>
+							<h2>Hardware Setup</h2>
+						</div>
+						<div class="gear-grid">
+							{hardware.map((item) => (
+								<div class="glass-card gear-card">
+									<h3 class="gear-name">{item.name}</h3>
+									<p class="gear-desc">{item.desc}</p>
+								</div>
+							))}
+						</div>
+					</section>
+
+					<!-- Software -->
+					<section class="gear-section">
+						<div class="section-title-wrap">
+							<span class="gear-icon">⚡</span>
+							<h2>Software & Applications</h2>
+						</div>
+						<div class="gear-grid">
+							{software.map((item) => (
+								<div class="glass-card gear-card">
+									<h3 class="gear-name">{item.name}</h3>
+									<p class="gear-desc">{item.desc}</p>
+								</div>
+							))}
+						</div>
+					</section>
+
+					<!-- Development -->
+					<section class="gear-section">
+						<div class="section-title-wrap">
+							<span class="gear-icon">🛠️</span>
+							<h2>Development & Architecture Stack</h2>
+						</div>
+						<div class="gear-grid">
+							{developmentStack.map((item) => (
+								<div class="glass-card gear-card">
+									<h3 class="gear-name">{item.name}</h3>
+									<p class="gear-desc">{item.desc}</p>
+								</div>
+							))}
+						</div>
+					</section>
+				</div>
+			</div>
+		</main>
+
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.uses-container {
+		max-width: 840px;
+	}
+
+	.page-header {
+		margin-bottom: 3.5rem;
+	}
+
+	.page-title {
+		margin-bottom: 0.75rem;
+	}
+
+	.page-lead {
+		font-size: 1.15rem;
+		color: var(--text-secondary);
+		line-height: 1.7;
+	}
+
+	.uses-groups {
+		display: flex;
+		flex-direction: column;
+		gap: 3.5rem;
+		margin-bottom: 4rem;
+	}
+
+	.section-title-wrap {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.gear-icon {
+		font-size: 1.5rem;
+	}
+
+	.section-title-wrap h2 {
+		font-size: 1.5rem;
+		margin: 0;
+	}
+
+	.gear-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+		gap: 1.25rem;
+	}
+
+	.gear-card {
+		padding: 1.5rem;
+	}
+
+	.gear-name {
+		font-size: 1.1rem;
+		color: #ffffff;
+		margin-bottom: 0.5rem;
+	}
+
+	.gear-desc {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		line-height: 1.6;
+		margin: 0;
+	}
+</style>
