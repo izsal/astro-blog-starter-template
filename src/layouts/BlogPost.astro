@@ -4,82 +4,243 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
+import D1PostStats from '../components/D1PostStats.astro';
+import { AUTHOR_NAME, AUTHOR_ROLE, AUTHOR_BIO, SOCIAL_LINKS } from '../consts';
+import { getCollection } from 'astro:content';
 
-type Props = CollectionEntry<'blog'>['data'];
+interface Props extends CollectionEntry<'blog'>['data'] {
+	slug?: string;
+}
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, slug = '' } = Astro.props;
+
+// Fetch other posts for internal linking (Traffic Strategy)
+const allPosts = await getCollection('blog');
+const relatedPosts = allPosts
+	.filter((p) => p.id !== slug)
+	.slice(0, 2);
 ---
 
-<html lang="en">
+<!doctype html>
+<html lang="id">
 	<head>
-		<BaseHead title={title} description={description} />
-		<style>
-			main {
-				width: calc(100% - 2em);
-				max-width: 100%;
-				margin: 0;
-			}
-			.hero-image {
-				width: 100%;
-			}
-			.hero-image img {
-				display: block;
-				margin: 0 auto;
-				border-radius: 12px;
-				box-shadow: var(--box-shadow);
-			}
-			.prose {
-				width: 720px;
-				max-width: calc(100% - 2em);
-				margin: auto;
-				padding: 1em;
-				color: rgb(var(--gray-dark));
-			}
-			.title {
-				margin-bottom: 1em;
-				padding: 1em 0;
-				text-align: center;
-				line-height: 1;
-			}
-			.title h1 {
-				margin: 0 0 0.5em 0;
-			}
-			.date {
-				margin-bottom: 0.5em;
-				color: rgb(var(--gray));
-			}
-			.last-updated-on {
-				font-style: italic;
-			}
-		</style>
+		<BaseHead title={`${title} — ${AUTHOR_NAME}`} description={description} image={heroImage} />
 	</head>
 
 	<body>
 		<Header />
-		<main>
-			<article>
-				<div class="hero-image">
-					{heroImage && <img width={1020} height={510} src={heroImage} alt="" />}
-				</div>
-				<div class="prose">
-					<div class="title">
-						<div class="date">
-							<FormattedDate date={pubDate} />
-							{
-								updatedDate && (
-									<div class="last-updated-on">
-										Last updated on <FormattedDate date={updatedDate} />
-									</div>
-								)
-							}
-						</div>
-						<h1>{title}</h1>
-						<hr />
+
+		<main class="post-layout section">
+			<div class="container article-container">
+				<!-- Article Header -->
+				<header class="article-header">
+					<div class="article-meta-top">
+						<span class="pill pill-cyan">Architecture & Tutorial</span>
+						<FormattedDate date={pubDate} />
+						{updatedDate && (
+							<span class="updated-badge">
+								(Updated <FormattedDate date={updatedDate} />)
+							</span>
+						)}
 					</div>
+
+					<h1 class="article-title">{title}</h1>
+					<p class="article-lead">{description}</p>
+
+					<!-- D1 SQLite Dynamic Stats & Interactive Likes -->
+					<div class="stats-row">
+						{slug && <D1PostStats slug={slug} />}
+					</div>
+				</header>
+
+				<!-- Hero Image Banner -->
+				{heroImage && (
+					<div class="hero-image-wrapper">
+						<img src={heroImage} alt={title} class="article-hero-img" />
+					</div>
+				)}
+
+				<!-- Article Body -->
+				<article class="prose article-body">
 					<slot />
+				</article>
+
+				<!-- Author Bio Box (PRD Goal 1 & Secondary Goal Recruiter) -->
+				<div class="author-box glass-card">
+					<div class="author-avatar-badge">
+						<span class="avatar-initials">QW</span>
+					</div>
+					<div class="author-details">
+						<h3 class="author-name">Ditulis oleh {AUTHOR_NAME}</h3>
+						<p class="author-bio">{AUTHOR_ROLE} — {AUTHOR_BIO}</p>
+						<div class="author-links">
+							<a href={SOCIAL_LINKS.github} target="_blank" rel="noopener">GitHub Profile &rarr;</a>
+							<a href="/projects">Lihat Portfolio Projects &rarr;</a>
+						</div>
+					</div>
 				</div>
-			</article>
+
+				<!-- Internal Links / Content Cluster Funnel (PRD Section 5 Traffic Strategy) -->
+				<section class="related-section">
+					<h3 class="related-title">Artikel & Panduan Terkait</h3>
+					<div class="grid-2">
+						{relatedPosts.map((related) => (
+							<a href={`/blog/${related.id}/`} class="post-card">
+								<div class="post-card-meta">
+									<FormattedDate date={related.data.pubDate} />
+								</div>
+								<h4 class="post-card-title">{related.data.title}</h4>
+								<p class="post-card-desc">{related.data.description}</p>
+								<div class="post-card-footer">
+									<span class="read-more-text">Lanjut Membaca &rarr;</span>
+								</div>
+							</a>
+						))}
+					</div>
+				</section>
+			</div>
 		</main>
+
 		<Footer />
 	</body>
 </html>
+
+<style>
+	.article-container {
+		max-width: 820px;
+	}
+
+	.article-header {
+		margin-bottom: 2.5rem;
+		text-align: left;
+	}
+
+	.article-meta-top {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		margin-bottom: 1rem;
+	}
+
+	.updated-badge {
+		color: var(--text-muted);
+		font-style: italic;
+	}
+
+	.article-title {
+		font-size: clamp(2rem, 4vw, 3rem);
+		font-weight: 800;
+		color: #ffffff;
+		margin-bottom: 1rem;
+		line-height: 1.2;
+	}
+
+	.article-lead {
+		font-size: 1.15rem;
+		color: var(--text-secondary);
+		line-height: 1.6;
+		margin-bottom: 1.5rem;
+	}
+
+	.stats-row {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--border-subtle);
+	}
+
+	.hero-image-wrapper {
+		margin: 2rem 0 3rem;
+		border-radius: var(--radius-md);
+		overflow: hidden;
+		border: 1px solid var(--border-subtle);
+		background: #090d16;
+	}
+
+	.article-hero-img {
+		width: 100%;
+		max-height: 480px;
+		object-fit: cover;
+		display: block;
+	}
+
+	.article-body {
+		margin-bottom: 4rem;
+	}
+
+	.author-box {
+		display: flex;
+		gap: 1.5rem;
+		align-items: center;
+		margin-bottom: 3.5rem;
+		padding: 2rem;
+		background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(6, 182, 212, 0.04) 100%), var(--bg-card);
+	}
+
+	.author-avatar-badge {
+		width: 64px;
+		height: 64px;
+		border-radius: var(--radius-md);
+		background: var(--primary-gradient);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+	}
+
+	.avatar-initials {
+		font-family: "Plus Jakarta Sans", sans-serif;
+		font-weight: 800;
+		font-size: 1.3rem;
+		color: #ffffff;
+	}
+
+	.author-name {
+		font-size: 1.15rem;
+		color: #ffffff;
+		margin-bottom: 0.3rem;
+	}
+
+	.author-bio {
+		font-size: 0.92rem;
+		color: var(--text-secondary);
+		margin-bottom: 0.75rem;
+		line-height: 1.5;
+	}
+
+	.author-links {
+		display: flex;
+		gap: 1.25rem;
+		font-size: 0.88rem;
+		font-weight: 600;
+	}
+
+	.related-section {
+		padding-top: 2rem;
+		border-top: 1px solid var(--border-subtle);
+	}
+
+	.related-title {
+		font-size: 1.35rem;
+		color: #ffffff;
+		margin-bottom: 1.5rem;
+	}
+
+	@media (max-width: 640px) {
+		.author-box {
+			flex-direction: column;
+			text-align: center;
+		}
+
+		.author-links {
+			justify-content: center;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+	}
+</style>

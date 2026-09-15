@@ -1,62 +1,312 @@
 ---
-import Layout from '../layouts/BlogPost.astro';
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { AUTHOR_NAME, AUTHOR_ROLE, AUTHOR_BIO, SITE_TITLE, SOCIAL_LINKS, TECH_CLUSTERS } from '../consts';
+
+const experiences = [
+	{
+		role: "Software Engineer & Cloud Architect",
+		company: "Freelance & Independent Research",
+		period: "2024 — Sekarang",
+		description:
+			"Merancang dan mengimplementasikan aplikasi web berbasis Astro, Cloudflare Workers & D1, Docker microservices, serta API performa tinggi menggunakan TypeScript dan Go/Python.",
+	},
+	{
+		role: "Fullstack Web Developer",
+		company: "Web & Digital Solutions",
+		period: "2022 — 2024",
+		description:
+			"Membangun dashboard internal, optimasi SEO technical, arsitektur database relasional, dan integrasi payment gateway serta auth pipeline.",
+	},
+];
+
+const technicalSkills = [
+	{ category: "Edge & Cloud", items: ["Cloudflare Workers", "Cloudflare D1 (SQLite)", "Cloudflare R2", "Hono", "Vercel"] },
+	{ category: "Frontend", items: ["Astro 5", "TypeScript", "React", "Next.js", "Tailwind CSS", "Vue.js"] },
+	{ category: "Backend & Systems", items: ["Node.js", "FastAPI (Python)", "Laravel (PHP)", "REST & GraphQL", "SQLite / PostgreSQL"] },
+	{ category: "DevOps & Tooling", items: ["Docker & Compose", "Linux (Ubuntu/Debian)", "Git & GitHub Actions", "Traefik", "Prometheus"] },
+];
 ---
 
-<Layout
-	title="About Me"
-	description="Lorem ipsum dolor sit amet"
-	pubDate={new Date('August 08 2021')}
-	heroImage="/blog-placeholder-about.jpg"
->
-	<p>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
-		labore et dolore magna aliqua. Vitae ultricies leo integer malesuada nunc vel risus commodo
-		viverra. Adipiscing enim eu turpis egestas pretium. Euismod elementum nisi quis eleifend quam
-		adipiscing. In hac habitasse platea dictumst vestibulum. Sagittis purus sit amet volutpat. Netus
-		et malesuada fames ac turpis egestas. Eget magna fermentum iaculis eu non diam phasellus
-		vestibulum lorem. Varius sit amet mattis vulputate enim. Habitasse platea dictumst quisque
-		sagittis. Integer quis auctor elit sed vulputate mi. Dictumst quisque sagittis purus sit amet.
-	</p>
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`About ${AUTHOR_NAME} — ${SITE_TITLE}`}
+			description={`Tentang ${AUTHOR_NAME}: ${AUTHOR_ROLE}. Pengalaman teknis, filosofi engineering, dan spesialisasi arsitektur cloud.`}
+		/>
+	</head>
+	<body>
+		<Header />
 
-	<p>
-		Morbi tristique senectus et netus. Id semper risus in hendrerit gravida rutrum quisque non
-		tellus. Habitasse platea dictumst quisque sagittis purus sit amet. Tellus molestie nunc non
-		blandit massa. Cursus vitae congue mauris rhoncus. Accumsan tortor posuere ac ut. Fringilla urna
-		porttitor rhoncus dolor. Elit ullamcorper dignissim cras tincidunt lobortis. In cursus turpis
-		massa tincidunt dui ut ornare lectus. Integer feugiat scelerisque varius morbi enim nunc.
-		Bibendum neque egestas congue quisque egestas diam. Cras ornare arcu dui vivamus arcu felis
-		bibendum. Dignissim suspendisse in est ante in nibh mauris. Sed tempus urna et pharetra pharetra
-		massa massa ultricies mi.
-	</p>
+		<main class="section">
+			<div class="container about-container">
+				<!-- Hero Bio -->
+				<section class="bio-hero">
+					<div class="bio-avatar-badge">
+						<span class="avatar-initials">QW</span>
+					</div>
+					<div class="bio-content">
+						<span class="pill pill-cyan mb-2">Developer Profile</span>
+						<h1 class="bio-title">Halo, saya <span class="gradient-text">{AUTHOR_NAME}</span></h1>
+						<p class="bio-subtitle">{AUTHOR_ROLE}</p>
+						<p class="bio-text">{AUTHOR_BIO}</p>
 
-	<p>
-		Mollis nunc sed id semper risus in. Convallis a cras semper auctor neque. Diam sit amet nisl
-		suscipit. Lacus viverra vitae congue eu consequat ac felis donec. Egestas integer eget aliquet
-		nibh praesent tristique magna sit amet. Eget magna fermentum iaculis eu non diam. In vitae
-		turpis massa sed elementum. Tristique et egestas quis ipsum suspendisse ultrices. Eget lorem
-		dolor sed viverra ipsum. Vel turpis nunc eget lorem dolor sed viverra. Posuere ac ut consequat
-		semper viverra nam. Laoreet suspendisse interdum consectetur libero id faucibus. Diam phasellus
-		vestibulum lorem sed risus ultricies tristique. Rhoncus dolor purus non enim praesent elementum
-		facilisis. Ultrices tincidunt arcu non sodales neque. Tempus egestas sed sed risus pretium quam
-		vulputate. Viverra suspendisse potenti nullam ac tortor vitae purus faucibus ornare. Fringilla
-		urna porttitor rhoncus dolor purus non. Amet dictum sit amet justo donec enim.
-	</p>
+						<div class="social-links-row">
+							<a href={SOCIAL_LINKS.github} target="_blank" rel="noopener" class="btn btn-primary">
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+								</svg>
+								<span>GitHub</span>
+							</a>
+							<a href={SOCIAL_LINKS.twitter} target="_blank" rel="noopener" class="btn btn-secondary">
+								<span>Twitter / X</span>
+							</a>
+							<a href={`mailto:${SOCIAL_LINKS.email}`} class="btn btn-secondary">
+								<span>Email Me</span>
+							</a>
+						</div>
+					</div>
+				</section>
 
-	<p>
-		Mattis ullamcorper velit sed ullamcorper morbi tincidunt. Tortor posuere ac ut consequat semper
-		viverra. Tellus mauris a diam maecenas sed enim ut sem viverra. Venenatis urna cursus eget nunc
-		scelerisque viverra mauris in. Arcu ac tortor dignissim convallis aenean et tortor at. Curabitur
-		gravida arcu ac tortor dignissim convallis aenean et tortor. Egestas tellus rutrum tellus
-		pellentesque eu. Fusce ut placerat orci nulla pellentesque dignissim enim sit amet. Ut enim
-		blandit volutpat maecenas volutpat blandit aliquam etiam. Id donec ultrices tincidunt arcu. Id
-		cursus metus aliquam eleifend mi.
-	</p>
+				<!-- Philosophy / Vision (PRD Section 1) -->
+				<section class="philosophy-section glass-card">
+					<h3>Filosofi & Core Vision</h3>
+					<blockquote class="vision-quote">
+						"Tempat untuk mendokumentasikan apa yang saya pelajari, apa yang saya bangun, dan membangun personal brand melalui tulisan."
+					</blockquote>
+					<p>
+						Sebagai engineer, saya percaya bahwa pemahaman mendalam lahir dari proses membongkar sistem, mendokumentasikan setiap rintangan, dan menyajikan solusi secara ringkas kepada komunitas. Blog dan knowledge hub ini dibangun di atas infrastruktur serverless modern (Cloudflare Edge & D1) untuk menyatukan performa kilat dengan kemudahan publishing.
+					</p>
+				</section>
 
-	<p>
-		Tempus quam pellentesque nec nam aliquam sem. Risus at ultrices mi tempus imperdiet. Id porta
-		nibh venenatis cras sed felis eget velit. Ipsum a arcu cursus vitae. Facilisis magna etiam
-		tempor orci eu lobortis elementum. Tincidunt dui ut ornare lectus sit. Quisque non tellus orci
-		ac. Blandit libero volutpat sed cras. Nec tincidunt praesent semper feugiat nibh sed pulvinar
-		proin gravida. Egestas integer eget aliquet nibh praesent tristique magna.
-	</p>
-</Layout>
+				<!-- Technical Skills Grid -->
+				<section class="skills-section">
+					<h2 class="section-title">Technical Skillset</h2>
+					<p class="section-subtitle">Teknologi dan tools yang saya gunakan sehari-hari dalam production & homelab.</p>
+
+					<div class="grid-2 skills-grid">
+						{technicalSkills.map((cat) => (
+							<div class="glass-card skill-cat-card">
+								<h3 class="cat-name">{cat.category}</h3>
+								<div class="skills-list">
+									{cat.items.map((item) => (
+										<span class="pill pill-neutral">{item}</span>
+									))}
+								</div>
+							</div>
+						))}
+					</div>
+				</section>
+
+				<!-- Experience Timeline -->
+				<section class="timeline-section">
+					<h2 class="section-title">Pengalaman & Rekam Jejak</h2>
+					<div class="timeline">
+						{experiences.map((exp) => (
+							<div class="timeline-item">
+								<div class="timeline-marker"></div>
+								<div class="timeline-content glass-card">
+									<div class="timeline-header">
+										<h3 class="exp-role">{exp.role}</h3>
+										<span class="exp-period pill pill-cyan">{exp.period}</span>
+									</div>
+									<h4 class="exp-company">{exp.company}</h4>
+									<p class="exp-desc">{exp.description}</p>
+								</div>
+							</div>
+						))}
+					</div>
+				</section>
+
+				<!-- Call to Action -->
+				<section class="contact-cta glass-card">
+					<h2>Mari Terhubung</h2>
+					<p>Punya pertanyaan teknis, tawaran kolaborasi, atau peluang kerja sama? Pintu komunikasi selalu terbuka.</p>
+					<a href={`mailto:${SOCIAL_LINKS.email}`} class="btn btn-primary">
+						Kirim Pesan ke {SOCIAL_LINKS.email} &rarr;
+					</a>
+				</section>
+			</div>
+		</main>
+
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.about-container {
+		max-width: 820px;
+	}
+
+	.bio-hero {
+		display: flex;
+		gap: 2.5rem;
+		align-items: center;
+		margin-bottom: 3.5rem;
+	}
+
+	.bio-avatar-badge {
+		width: 120px;
+		height: 120px;
+		border-radius: var(--radius-lg);
+		background: var(--primary-gradient);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+	}
+
+	.avatar-initials {
+		font-family: "Plus Jakarta Sans", sans-serif;
+		font-weight: 800;
+		font-size: 2.5rem;
+		color: #ffffff;
+	}
+
+	.bio-title {
+		font-size: clamp(2rem, 4vw, 2.7rem);
+		margin-bottom: 0.25rem;
+	}
+
+	.bio-subtitle {
+		font-size: 1.15rem;
+		color: var(--primary-light);
+		font-weight: 600;
+		margin-bottom: 1rem;
+	}
+
+	.bio-text {
+		font-size: 1.05rem;
+		color: var(--text-secondary);
+		line-height: 1.65;
+		margin-bottom: 1.5rem;
+	}
+
+	.social-links-row {
+		display: flex;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.mb-2 {
+		margin-bottom: 0.5rem;
+	}
+
+	.philosophy-section {
+		margin-bottom: 3.5rem;
+		padding: 2.5rem;
+		border-left: 4px solid var(--primary);
+	}
+
+	.vision-quote {
+		font-size: 1.15rem;
+		font-style: italic;
+		color: #c7d2fe;
+		margin: 1rem 0 1.25rem;
+		line-height: 1.6;
+	}
+
+	.skills-section {
+		margin-bottom: 3.5rem;
+	}
+
+	.skills-grid {
+		margin-top: 1.5rem;
+	}
+
+	.skill-cat-card {
+		padding: 1.5rem;
+	}
+
+	.cat-name {
+		font-size: 1.1rem;
+		color: #ffffff;
+		margin-bottom: 1rem;
+	}
+
+	.skills-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+	}
+
+	.timeline-section {
+		margin-bottom: 3.5rem;
+	}
+
+	.timeline {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+		margin-top: 1.5rem;
+		border-left: 2px solid var(--border-subtle);
+		padding-left: 1.5rem;
+		position: relative;
+	}
+
+	.timeline-item {
+		position: relative;
+	}
+
+	.timeline-marker {
+		position: absolute;
+		left: -1.95rem;
+		top: 1.5rem;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--primary);
+		box-shadow: 0 0 10px var(--primary);
+	}
+
+	.timeline-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.35rem;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.exp-role {
+		font-size: 1.15rem;
+		color: #ffffff;
+	}
+
+	.exp-company {
+		font-size: 0.95rem;
+		color: var(--primary-light);
+		margin-bottom: 0.75rem;
+		font-weight: 500;
+	}
+
+	.exp-desc {
+		font-size: 0.92rem;
+		color: var(--text-secondary);
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.contact-cta {
+		text-align: center;
+		padding: 3rem 2rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	@media (max-width: 680px) {
+		.bio-hero {
+			flex-direction: column;
+			text-align: center;
+		}
+
+		.social-links-row {
+			justify-content: center;
+		}
+	}
+</style>

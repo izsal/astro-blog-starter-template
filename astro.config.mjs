@@ -7,11 +7,12 @@ import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
 export default defineConfig({
-	site: "https://example.com",
+	site: "https://qblog.qwarts.my.id",
 	integrations: [mdx(), sitemap()],
 	adapter: cloudflare({
 		platformProxy: {
 			enabled: true,
 		},
+		imageService: "compile",
 	}),
 });

@@ -2,49 +2,442 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import FormattedDate from '../components/FormattedDate.astro';
+import { SITE_TITLE, SITE_DESCRIPTION, AUTHOR_NAME, AUTHOR_ROLE, AUTHOR_BIO, TECH_CLUSTERS, SOCIAL_LINKS } from '../consts';
+import { getCollection } from 'astro:content';
+import { getD1Database, getProjects, getSnippets } from '../lib/db';
+
+// Fetch latest blog posts
+const posts = (await getCollection('blog'))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+	.slice(0, 4);
+
+// Fetch D1 data via binding "my-binding"
+const db = getD1Database(Astro.locals);
+const featuredProjects = await getProjects(db, true);
+const recentSnippets = (await getSnippets(db)).slice(0, 3);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="id">
 	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<BaseHead title={`${SITE_TITLE} — ${AUTHOR_NAME}`} description={SITE_DESCRIPTION} />
 	</head>
 	<body>
 		<Header />
+		
 		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This
-				template serves as a lightweight, minimally-styled starting point for anyone looking to build
-				a personal website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to <a href="https://docs.astro.build/"
-					>read the docs
-				</a> or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out <a
-					href="https://github.com/Charca/astro-blog-template"
-					>astro-blog-template
-				</a> by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
+			<!-- Hero Section -->
+			<section class="hero section">
+				<div class="container">
+					<div class="hero-badge">
+						<span class="pulse-icon">●</span> Available for Projects & Engineering Roles
+					</div>
+
+					<h1 class="hero-title">
+						Membangun Sistem, Menulis Kode & Berbagi <span class="gradient-text">Pengetahuan Teknis</span>.
+					</h1>
+
+					<p class="hero-description">
+						Halo! Saya <strong>{AUTHOR_NAME}</strong>, {AUTHOR_ROLE}. Platform ini adalah ruang eksplorasi teknis, dokumentasi mendalam, dan portofolio arsitektur software mulai dari web frontend hingga edge computing Cloudflare.
+					</p>
+
+					<div class="hero-actions">
+						<a href="/blog" class="btn btn-primary">
+							<span>Jelajahi Artikel</span>
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M5 12h14"></path>
+								<path d="m12 5 7 7-7 7"></path>
+							</svg>
+						</a>
+						<a href="/projects" class="btn btn-secondary">
+							<span>Lihat Portfolio Project</span>
+						</a>
+						<a href="/knowledge" class="btn btn-secondary">
+							<span>Knowledge Hub (TIL)</span>
+						</a>
+					</div>
+
+					<!-- Tech Stack Clusters Banner -->
+					<div class="tech-stack-wrapper">
+						<span class="tech-label">Fokus Teknologi:</span>
+						<div class="tech-pills-row">
+							{TECH_CLUSTERS.map((tech) => (
+								<a href={`/blog?tag=${encodeURIComponent(tech)}`} class="tech-pill">
+									<span>{tech}</span>
+								</a>
+							))}
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Core Value & Traffic Pillars (PRD Section 1 & 5) -->
+			<section class="section value-pillars-section">
+				<div class="container">
+					<div class="grid-3">
+						<div class="glass-card pillar-card">
+							<div class="pillar-icon">🚀</div>
+							<h3>Engineering Portfolio</h3>
+							<p>Katalog implementasi nyata sistem cloud, distributed microservices, dan frontend berkinerja tinggi.</p>
+							<a href="/projects" class="card-link">Telusuri Project &rarr;</a>
+						</div>
+						<div class="glass-card pillar-card">
+							<div class="pillar-icon">📚</div>
+							<h3>Technical Knowledge Base</h3>
+							<p>Artikel mendalam, best practices arsitektur, dan troubleshooting tips untuk developer Indonesia.</p>
+							<a href="/blog" class="card-link">Baca Blog &rarr;</a>
+						</div>
+						<div class="glass-card pillar-card">
+							<div class="pillar-icon">⚡</div>
+							<h3>Cloudflare D1 & Edge</h3>
+							<p>Semua interaksi analitik, state views, dan query project ditenagai database SQLite Cloudflare D1 (<code>my-binding</code>).</p>
+							<a href="/knowledge" class="card-link">Cek Knowledge Hub &rarr;</a>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Latest Articles & Content Clusters -->
+			<section class="section articles-section">
+				<div class="container">
+					<div class="section-header-flex">
+						<div>
+							<h2 class="section-title">
+								<span class="title-accent">✍️</span> Artikel & Panduan Terbaru
+							</h2>
+							<p class="section-subtitle">Dokumentasi teknis dengan bahasan terstruktur dan contoh implementasi kode.</p>
+						</div>
+						<a href="/blog" class="view-all-link">Lihat Semua Artikel &rarr;</a>
+					</div>
+
+					<div class="grid-2">
+						{posts.map((post) => (
+							<a href={`/blog/${post.id}/`} class="post-card">
+								<div class="post-card-meta">
+									<FormattedDate date={post.data.pubDate} />
+									<span>•</span>
+									<span class="reading-tag">Tutorial</span>
+								</div>
+								<h3 class="post-card-title">{post.data.title}</h3>
+								<p class="post-card-desc">{post.data.description}</p>
+								<div class="post-card-footer">
+									<span class="read-more-text">Baca selengkapnya &rarr;</span>
+									<span class="pill pill-neutral">Edge Cached</span>
+								</div>
+							</a>
+						))}
+					</div>
+				</div>
+			</section>
+
+			<!-- Featured Projects (from D1 SQLite) -->
+			<section class="section projects-section">
+				<div class="container">
+					<div class="section-header-flex">
+						<div>
+							<div class="pill pill-cyan mb-2">Connected to Cloudflare D1</div>
+							<h2 class="section-title">
+								<span class="title-accent">💼</span> Featured Projects & Arsitektur
+							</h2>
+							<p class="section-subtitle">Data portofolio terhubung langsung dengan binding D1 SQLite <code>my-binding</code>.</p>
+						</div>
+						<a href="/projects" class="view-all-link">Semua Project &rarr;</a>
+					</div>
+
+					<div class="grid-3">
+						{featuredProjects.map((proj) => (
+							<div class="project-card">
+								<div class="project-header">
+									<span class="pill pill-emerald">{proj.category}</span>
+									<div class="project-links">
+										{proj.github_url && (
+											<a href={proj.github_url} target="_blank" rel="noopener" class="project-link-icon" title="View Source on GitHub">
+												<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+													<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+												</svg>
+											</a>
+										)}
+										{proj.live_url && (
+											<a href={proj.live_url} target="_blank" rel="noopener" class="project-link-icon" title="View Live Deployment">
+												<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+													<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+													<polyline points="15 3 21 3 21 9"></polyline>
+													<line x1="10" y1="14" x2="21" y2="3"></line>
+												</svg>
+											</a>
+										)}
+									</div>
+								</div>
+								<h3 class="project-title">{proj.title}</h3>
+								<p class="project-desc">{proj.description}</p>
+								<div class="project-stack">
+									{proj.tech_stack.map((t) => (
+										<span class="pill pill-neutral">{t}</span>
+									))}
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+			</section>
+
+			<!-- Quick Knowledge Hub / TIL (from D1 SQLite) -->
+			<section class="section snippets-section">
+				<div class="container">
+					<div class="section-header-flex">
+						<div>
+							<h2 class="section-title">
+								<span class="title-accent">💡</span> Knowledge Hub (TIL)
+							</h2>
+							<p class="section-subtitle">Catatan teknis ringkas, troubleshooting tips, dan code snippets di edge.</p>
+						</div>
+						<a href="/knowledge" class="view-all-link">Jelajahi Knowledge Hub &rarr;</a>
+					</div>
+
+					<div class="grid-3">
+						{recentSnippets.map((snip) => (
+							<div class="snippet-card">
+								<div class="snippet-header">
+									<span class="pill pill-cyan">{snip.category}</span>
+								</div>
+								<h4 class="snippet-title">{snip.title}</h4>
+								<p class="snippet-summary">{snip.summary}</p>
+								{snip.code_snippet && (
+									<div class="snippet-code-box">
+										<pre><code>{snip.code_snippet}</code></pre>
+									</div>
+								)}
+							</div>
+						))}
+					</div>
+				</div>
+			</section>
+
+			<!-- Interactive Newsletter / Inquiries (D1 Backend) -->
+			<section class="section newsletter-section">
+				<div class="container">
+					<div class="newsletter-card glass-card">
+						<div class="newsletter-content">
+							<span class="pill pill-emerald mb-2">Tetap Terhubung</span>
+							<h3>Dapatkan Update & Rekap Teknis Mingguan</h3>
+							<p>Tidak ada spam. Hanya rangkuman artikel terbaru seputar arsitektur cloud, Astro, TypeScript, dan tips engineering.</p>
+						</div>
+
+						<form class="newsletter-form" id="newsletter-form">
+							<div class="form-input-group">
+								<input
+									type="email"
+									id="subscriber-email"
+									name="email"
+									placeholder="alamat.email@kamu.com"
+									required
+									class="email-input"
+								/>
+								<button type="submit" class="btn btn-primary submit-btn" id="subscribe-btn">
+									Subscribe
+								</button>
+							</div>
+							<p class="form-status" id="form-status"></p>
+						</form>
+					</div>
+				</div>
+			</section>
 		</main>
+
 		<Footer />
+
+		<script>
+			const form = document.getElementById('newsletter-form') as HTMLFormElement | null;
+			const emailInput = document.getElementById('subscriber-email') as HTMLInputElement | null;
+			const statusEl = document.getElementById('form-status');
+			const submitBtn = document.getElementById('subscribe-btn') as HTMLButtonElement | null;
+
+			if (form && emailInput && statusEl && submitBtn) {
+				form.addEventListener('submit', async (e) => {
+					e.preventDefault();
+					const email = emailInput.value.trim();
+					if (!email) return;
+
+					submitBtn.disabled = true;
+					statusEl.textContent = 'Menyimpan ke Cloudflare D1...';
+					statusEl.className = 'form-status info';
+
+					try {
+						const res = await fetch('/api/subscribe', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ email }),
+						});
+
+						const data = await res.json();
+						if (res.ok && data.success) {
+							statusEl.textContent = '✓ ' + (data.message || 'Berhasil berlangganan!');
+							statusEl.className = 'form-status success';
+							emailInput.value = '';
+						} else {
+							statusEl.textContent = '✕ ' + (data.message || 'Gagal menyimpan.');
+							statusEl.className = 'form-status error';
+						}
+					} catch (err) {
+						statusEl.textContent = '✕ Terjadi kesalahan koneksi.';
+						statusEl.className = 'form-status error';
+					} finally {
+						submitBtn.disabled = false;
+					}
+				});
+			}
+		</script>
 	</body>
 </html>
+
+<style>
+	.pulse-icon {
+		color: #10b981;
+		margin-right: 0.35rem;
+		font-size: 0.75rem;
+	}
+
+	.tech-stack-wrapper {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--border-subtle);
+	}
+
+	.tech-label {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text-muted);
+	}
+
+	.value-pillars-section {
+		padding-top: 1rem;
+	}
+
+	.pillar-card {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.pillar-icon {
+		font-size: 2rem;
+		margin-bottom: 0.25rem;
+	}
+
+	.card-link {
+		margin-top: auto;
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: var(--primary-light);
+	}
+
+	.section-header-flex {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		margin-bottom: 2.5rem;
+		gap: 1rem;
+		flex-wrap: wrap;
+	}
+
+	.view-all-link {
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: var(--primary-light);
+		white-space: nowrap;
+	}
+
+	.view-all-link:hover {
+		color: #ffffff;
+		transform: translateX(4px);
+	}
+
+	.title-accent {
+		margin-right: 0.4rem;
+	}
+
+	.mb-2 {
+		margin-bottom: 0.6rem;
+	}
+
+	.reading-tag {
+		color: var(--primary-light);
+		font-weight: 500;
+	}
+
+	.read-more-text {
+		color: var(--primary-light);
+		font-weight: 500;
+	}
+
+	.snippet-summary {
+		font-size: 0.88rem;
+		color: var(--text-secondary);
+		margin-bottom: 0.5rem;
+	}
+
+	.newsletter-card {
+		display: grid;
+		grid-template-columns: 1.2fr 1fr;
+		gap: 2.5rem;
+		align-items: center;
+		padding: 3rem;
+		background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%), var(--bg-card);
+		border: 1px solid rgba(99, 102, 241, 0.25);
+	}
+
+	.form-input-group {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.email-input {
+		flex: 1;
+		padding: 0.75rem 1rem;
+		border-radius: var(--radius-sm);
+		background: #090d16;
+		border: 1px solid var(--border-subtle);
+		color: #ffffff;
+		font-size: 0.95rem;
+		outline: none;
+		transition: var(--transition-smooth);
+	}
+
+	.email-input:focus {
+		border-color: var(--primary);
+		box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+	}
+
+	.form-status {
+		margin-top: 0.6rem;
+		font-size: 0.85rem;
+		min-height: 1.2rem;
+	}
+
+	.form-status.success {
+		color: #34d399;
+	}
+
+	.form-status.error {
+		color: #f87171;
+	}
+
+	.form-status.info {
+		color: #93c5fd;
+	}
+
+	@media (max-width: 820px) {
+		.newsletter-card {
+			grid-template-columns: 1fr;
+			padding: 2rem 1.5rem;
+		}
+
+		.form-input-group {
+			flex-direction: column;
+		}
+	}
+</style>

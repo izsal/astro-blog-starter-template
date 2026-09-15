@@ -1,0 +1,178 @@
+---
+interface Props {
+	slug: string;
+	initialViews?: number;
+	initialLikes?: number;
+}
+
+const { slug, initialViews = 0, initialLikes = 0 } = Astro.props;
+---
+
+<div class="d1-stats-wrapper" data-slug={slug}>
+	<div class="stat-bubble" title="Total Views stored in Cloudflare D1">
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+			<circle cx="12" cy="12" r="3"></circle>
+		</svg>
+		<span class="views-count" id={`views-${slug}`}>{initialViews > 0 ? initialViews : '...'} views</span>
+	</div>
+
+	<button
+		type="button"
+		class="like-btn"
+		id={`like-btn-${slug}`}
+		title="Click to like this article (persisted in Cloudflare D1)"
+		aria-label="Like this article"
+	>
+		<svg class="heart-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+		</svg>
+		<span class="likes-count" id={`likes-${slug}`}>{initialLikes}</span>
+	</button>
+
+	<span class="d1-pill" title="Connected to Cloudflare D1 SQLite Database (my-binding)">
+		<span class="d1-dot"></span>
+		D1 SQLite
+	</span>
+</div>
+
+<script>
+	function initPostStats() {
+		const wrappers = document.querySelectorAll<HTMLElement>('.d1-stats-wrapper');
+
+		wrappers.forEach(async (wrapper) => {
+			const slug = wrapper.dataset.slug;
+			if (!slug) return;
+
+			const viewsEl = wrapper.querySelector<HTMLElement>(`#views-${slug}`);
+			const likesEl = wrapper.querySelector<HTMLElement>(`#likes-${slug}`);
+			const likeBtn = wrapper.querySelector<HTMLButtonElement>(`#like-btn-${slug}`);
+
+			// Track view count increment via D1 API
+			try {
+				const res = await fetch(`/api/views/${encodeURIComponent(slug)}`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ action: 'view' }),
+				});
+
+				if (res.ok) {
+					const data = await res.json();
+					if (viewsEl && typeof data.views === 'number') {
+						viewsEl.textContent = `${data.views} views`;
+					}
+					if (likesEl && typeof data.likes === 'number') {
+						likesEl.textContent = `${data.likes}`;
+					}
+				}
+			} catch (e) {
+				console.warn('Could not update view count:', e);
+			}
+
+			// Handle like interaction
+			if (likeBtn) {
+				likeBtn.addEventListener('click', async () => {
+					if (likeBtn.disabled) return;
+					likeBtn.disabled = true;
+
+					try {
+						const res = await fetch(`/api/views/${encodeURIComponent(slug)}`, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ action: 'like' }),
+						});
+
+						if (res.ok) {
+							const data = await res.json();
+							if (likesEl && typeof data.likes === 'number') {
+								likesEl.textContent = `${data.likes}`;
+								likeBtn.classList.add('liked');
+							}
+						}
+					} catch (e) {
+						console.error('Failed to register like:', e);
+					} finally {
+						likeBtn.disabled = false;
+					}
+				});
+			}
+		});
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initPostStats);
+	} else {
+		initPostStats();
+	}
+</script>
+
+<style>
+	.d1-stats-wrapper {
+		display: inline-flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		padding: 0.4rem 0.85rem;
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-full);
+		font-size: 0.82rem;
+	}
+
+	.stat-bubble {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		color: var(--text-muted);
+	}
+
+	.like-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		background: transparent;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		border-radius: var(--radius-full);
+		padding: 0.2rem 0.6rem;
+		color: var(--text-secondary);
+		cursor: pointer;
+		font-size: 0.8rem;
+		transition: var(--transition-smooth);
+	}
+
+	.like-btn:hover {
+		background: rgba(244, 63, 94, 0.12);
+		border-color: rgba(244, 63, 94, 0.3);
+		color: #fda4af;
+	}
+
+	.like-btn.liked {
+		background: rgba(244, 63, 94, 0.2);
+		border-color: rgba(244, 63, 94, 0.5);
+		color: #f43f5e;
+	}
+
+	.like-btn.liked .heart-icon {
+		fill: #f43f5e;
+	}
+
+	.d1-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.15rem 0.45rem;
+		border-radius: var(--radius-full);
+		font-size: 0.7rem;
+		font-family: "JetBrains Mono", monospace;
+		background: rgba(16, 185, 129, 0.1);
+		color: #34d399;
+		border: 1px solid rgba(16, 185, 129, 0.25);
+	}
+
+	.d1-dot {
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		background: #10b981;
+	}
+</style>

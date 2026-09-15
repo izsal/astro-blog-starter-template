@@ -1,0 +1,166 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { AUTHOR_NAME, SITE_TITLE } from '../consts';
+import { getD1Database, getSnippets } from '../lib/db';
+
+const db = getD1Database(Astro.locals);
+const snippets = await getSnippets(db);
+
+const categories = Array.from(new Set(snippets.map((s) => s.category)));
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`Knowledge Hub & Digital Garden — ${AUTHOR_NAME}`}
+			description="Catatan harian, troubleshooting tips, dan code snippets teknis seputar Cloudflare, Docker, Linux, dan Astro."
+		/>
+	</head>
+	<body>
+		<Header />
+
+		<main class="section">
+			<div class="container">
+				<div class="page-header">
+					<div class="header-badges">
+						<span class="pill pill-cyan">Digital Garden</span>
+						<span class="pill pill-emerald">D1 SQLite Sync</span>
+					</div>
+					<h1 class="page-title">Knowledge Hub & Today I Learned (TIL)</h1>
+					<p class="page-lead">
+						Dokumentasi ringkas dari eksperimen sehari-hari, snippet konfigurasi production, dan solusi troubleshooting yang saya temukan saat membangun sistem.
+					</p>
+
+					<div class="category-filters">
+						<span class="filter-label">Filter Kategori:</span>
+						<button class="filter-btn active" data-category="all">Semua</button>
+						{categories.map((cat) => (
+							<button class="filter-btn" data-category={cat.toLowerCase()}>
+								{cat}
+							</button>
+						))}
+					</div>
+				</div>
+
+				<div class="snippets-grid grid-2">
+					{snippets.map((item) => (
+						<div class="snippet-card" data-category={item.category.toLowerCase()}>
+							<div class="snippet-header">
+								<span class="pill pill-cyan">{item.category}</span>
+								<span class="date-text">D1 SQLite Synced</span>
+							</div>
+
+							<h3 class="snippet-title">{item.title}</h3>
+							<p class="snippet-summary">{item.summary}</p>
+
+							{item.code_snippet && (
+								<div class="snippet-code-box">
+									<pre><code>{item.code_snippet}</code></pre>
+								</div>
+							)}
+						</div>
+					))}
+				</div>
+			</div>
+		</main>
+
+		<Footer />
+
+		<script>
+			const filterBtns = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
+			const cards = document.querySelectorAll<HTMLElement>('.snippet-card');
+
+			filterBtns.forEach((btn) => {
+				btn.addEventListener('click', () => {
+					filterBtns.forEach((b) => b.classList.remove('active'));
+					btn.classList.add('active');
+
+					const category = btn.dataset.category || 'all';
+
+					cards.forEach((card) => {
+						const cardCategory = card.dataset.category;
+						if (category === 'all' || cardCategory === category) {
+							card.style.display = 'block';
+						} else {
+							card.style.display = 'none';
+						}
+					});
+				});
+			});
+		</script>
+	</body>
+</html>
+
+<style>
+	.page-header {
+		margin-bottom: 3.5rem;
+		max-width: 800px;
+	}
+
+	.header-badges {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.page-title {
+		margin-bottom: 1rem;
+	}
+
+	.page-lead {
+		font-size: 1.15rem;
+		color: var(--text-secondary);
+		line-height: 1.7;
+		margin-bottom: 2rem;
+	}
+
+	.category-filters {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--border-subtle);
+	}
+
+	.filter-label {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		font-weight: 600;
+	}
+
+	.filter-btn {
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-sm);
+		padding: 0.35rem 0.75rem;
+		color: var(--text-secondary);
+		font-size: 0.82rem;
+		cursor: pointer;
+		transition: var(--transition-smooth);
+	}
+
+	.filter-btn:hover {
+		border-color: var(--primary);
+		color: #ffffff;
+	}
+
+	.filter-btn.active {
+		background: rgba(99, 102, 241, 0.2);
+		border-color: var(--primary);
+		color: #ffffff;
+	}
+
+	.snippets-grid {
+		margin-bottom: 4rem;
+	}
+
+	.date-text {
+		font-size: 0.75rem;
+		color: #10b981;
+		font-family: "JetBrains Mono", monospace;
+	}
+</style>

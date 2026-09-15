@@ -10,5 +10,12 @@
 	"observability": {
 		"enabled": true
 	},
-	"upload_source_maps": true
+	"upload_source_maps": true,
+	"d1_databases": [
+		{
+			"binding": "my-binding",
+			"database_name": "qblog-db",
+			"database_id": "local-qblog-db"
+		}
+	]
 }
