@@ -1,28 +1,22 @@
 ---
+export const prerender = false;
+
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { SITE_TITLE } from '../../consts';
 import { getD1Database } from '../../lib/db';
-import { getCategoryBySlug, getCategories } from '../../lib/categories';
+import { getCategoryBySlug } from '../../lib/categories';
 import { getUnifiedPosts } from '../../lib/posts';
-
-export async function getStaticPaths() {
-	return [
-		{ params: { slug: 'development' } },
-		{ params: { slug: 'frontend' } },
-		{ params: { slug: 'backend' } },
-		{ params: { slug: 'devops' } },
-		{ params: { slug: 'cloud' } },
-	];
-}
 
 const { slug } = Astro.params;
 const db = getD1Database(Astro.locals);
 const category = await getCategoryBySlug(db, slug || '');
-const allPosts = await getUnifiedPosts(db);
+const allPosts = await getUnifiedPosts(db, { status: 'PUBLISHED' });
 const filteredPosts = allPosts.filter(
-	(p) => (p.category || '').toLowerCase() === (category?.name || slug || '').toLowerCase()
+	(p) =>
+		(p.category || '').toLowerCase() === (category?.name || slug || '').toLowerCase() ||
+		(p.category_id && category?.id && p.category_id === category.id)
 );
 ---
 

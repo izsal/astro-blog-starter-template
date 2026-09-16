@@ -1,19 +1,19 @@
 ---
+export const prerender = false;
+
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import { SITE_TITLE, SITE_DESCRIPTION, AUTHOR_NAME, AUTHOR_ROLE, AUTHOR_BIO, TECH_CLUSTERS, SOCIAL_LINKS } from '../consts';
-import { getCollection } from 'astro:content';
 import { getD1Database, getProjects, getSnippets } from '../lib/db';
-
-// Fetch latest blog posts
-const posts = (await getCollection('blog'))
-	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-	.slice(0, 4);
+import { getUnifiedPosts } from '../lib/posts';
 
 // Fetch D1 data via binding "my-binding"
 const db = getD1Database(Astro.locals);
+const allPosts = await getUnifiedPosts(db, { status: 'PUBLISHED' });
+const posts = allPosts.slice(0, 4);
+
 const featuredProjects = await getProjects(db, true);
 const recentSnippets = (await getSnippets(db)).slice(0, 3);
 ---
@@ -113,17 +113,17 @@ const recentSnippets = (await getSnippets(db)).slice(0, 3);
 
 					<div class="grid-2">
 						{posts.map((post) => (
-							<a href={`/blog/${post.id}/`} class="post-card">
+							<a href={`/blog/${post.slug}/`} class="post-card">
 								<div class="post-card-meta">
-									<FormattedDate date={post.data.pubDate} />
+									<FormattedDate date={new Date(post.published_at)} />
 									<span>•</span>
-									<span class="reading-tag">Tutorial</span>
+									<span class="reading-tag">{post.category || 'Tutorial'}</span>
 								</div>
-								<h3 class="post-card-title">{post.data.title}</h3>
-								<p class="post-card-desc">{post.data.description}</p>
+								<h3 class="post-card-title">{post.title}</h3>
+								<p class="post-card-desc">{post.excerpt}</p>
 								<div class="post-card-footer">
 									<span class="read-more-text">Baca selengkapnya &rarr;</span>
-									<span class="pill pill-neutral">Edge Cached</span>
+									<span class="pill pill-neutral">{post.reading_time || 3} min read</span>
 								</div>
 							</a>
 						))}

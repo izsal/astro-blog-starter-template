@@ -67,7 +67,7 @@ export async function getUnifiedPosts(
 			}
 
 			if (options?.status && options.status !== "ALL" && !options?.includeTrashed) {
-				conditions.push("p.status = ?");
+				conditions.push("UPPER(p.status) = UPPER(?)");
 				bindings.push(options.status);
 			}
 
@@ -93,7 +93,7 @@ export async function getUnifiedPosts(
 							category: r.category_name || "Development",
 							category_id: r.cat_id,
 							tags: ["Cloudflare", "D1", "Astro"],
-							status: r.status || "PUBLISHED",
+							status: ((r.status || "PUBLISHED") as string).toUpperCase() as any,
 							focus_keyword: r.focus_keyword || "",
 							search_intent: r.search_intent || "Informational",
 							seo_score: r.seo_score ? Number(r.seo_score) : 85,

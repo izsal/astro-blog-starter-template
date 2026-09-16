@@ -1,14 +1,26 @@
 ---
+export const prerender = false;
+
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { SITE_TITLE, SITE_DESCRIPTION, TECH_CLUSTERS } from '../../consts';
-import { getCollection } from 'astro:content';
+import { getD1Database } from '../../lib/db';
+import { getUnifiedPosts } from '../../lib/posts';
 import FormattedDate from '../../components/FormattedDate.astro';
 
-const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-);
+const db = getD1Database(Astro.locals);
+const tagFilter = Astro.url.searchParams.get('tag');
+
+let allPosts = await getUnifiedPosts(db, { status: 'PUBLISHED' });
+
+if (tagFilter) {
+	allPosts = allPosts.filter(
+		(p) =>
+			(p.tags && p.tags.some((t) => t.toLowerCase() === tagFilter.toLowerCase())) ||
+			(p.category && p.category.toLowerCase() === tagFilter.toLowerCase())
+	);
+}
 ---
 
 <!doctype html>
@@ -34,9 +46,12 @@ const posts = (await getCollection('blog')).sort(
 					<!-- Content Clusters Filter -->
 					<div class="clusters-bar">
 						<span class="cluster-label">Topic Clusters:</span>
-						<a href="/blog" class="cluster-pill active">All Topics</a>
+						<a href="/blog" class:list={['cluster-pill', { active: !tagFilter }]}>All Topics</a>
 						{TECH_CLUSTERS.map((cluster) => (
-							<a href={`/blog?tag=${encodeURIComponent(cluster)}`} class="cluster-pill">
+							<a
+								href={`/blog?tag=${encodeURIComponent(cluster)}`}
+								class:list={['cluster-pill', { active: tagFilter?.toLowerCase() === cluster.toLowerCase() }]}
+							>
 								{cluster}
 							</a>
 						))}
@@ -44,35 +59,41 @@ const posts = (await getCollection('blog')).sort(
 				</div>
 
 				<div class="articles-grid">
-					{posts.map((post, index) => (
-						<article class:list={['blog-card-item', { 'featured-item': index === 0 }]}>
-							<a href={`/blog/${post.id}/`} class="blog-card-link">
-								{post.data.heroImage && (
-									<div class="card-image-wrap">
-										<img
-											src={post.data.heroImage}
-											alt={post.data.title}
-											loading={index === 0 ? 'eager' : 'lazy'}
-											class="card-img"
-										/>
+					{allPosts.length === 0 ? (
+						<div class="empty-state">
+							<p>Belum ada artikel yang dipublikasikan dalam kategori ini.</p>
+						</div>
+					) : (
+						allPosts.map((post, index) => (
+							<article class:list={['blog-card-item', { 'featured-item': index === 0 }]}>
+								<a href={`/blog/${post.slug}/`} class="blog-card-link">
+									{post.cover_image && (
+										<div class="card-image-wrap">
+											<img
+												src={post.cover_image}
+												alt={post.title}
+												loading={index === 0 ? 'eager' : 'lazy'}
+												class="card-img"
+											/>
+										</div>
+									)}
+									<div class="card-content">
+										<div class="card-meta">
+											<FormattedDate date={new Date(post.published_at)} />
+											<span class="dot-separator">•</span>
+											<span class="tag-pill">{post.category || 'Guide'}</span>
+										</div>
+										<h2 class="card-title">{post.title}</h2>
+										<p class="card-desc">{post.excerpt}</p>
+										<div class="card-bottom">
+											<span class="read-text">Baca Artikel &rarr;</span>
+											<span class="edge-note">{post.reading_time || 3} min read</span>
+										</div>
 									</div>
-								)}
-								<div class="card-content">
-									<div class="card-meta">
-										<FormattedDate date={post.data.pubDate} />
-										<span class="dot-separator">•</span>
-										<span class="tag-pill">Guide</span>
-									</div>
-									<h2 class="card-title">{post.data.title}</h2>
-									<p class="card-desc">{post.data.description}</p>
-									<div class="card-bottom">
-										<span class="read-text">Baca Artikel &rarr;</span>
-										<span class="edge-note">Edge Powered</span>
-									</div>
-								</div>
-							</a>
-						</article>
-					))}
+								</a>
+							</article>
+						))
+					)}
 				</div>
 			</div>
 		</main>

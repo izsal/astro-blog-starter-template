@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
@@ -7,24 +9,10 @@ import { getD1Database } from '../../lib/db';
 import { getTagBySlug } from '../../lib/tags';
 import { getUnifiedPosts } from '../../lib/posts';
 
-export async function getStaticPaths() {
-	return [
-		{ params: { slug: 'astro' } },
-		{ params: { slug: 'cloudflare' } },
-		{ params: { slug: 'typescript' } },
-		{ params: { slug: 'react' } },
-		{ params: { slug: 'docker' } },
-		{ params: { slug: 'linux' } },
-		{ params: { slug: 'laravel' } },
-		{ params: { slug: 'fastapi' } },
-		{ params: { slug: 'vue' } },
-	];
-}
-
 const { slug } = Astro.params;
 const db = getD1Database(Astro.locals);
 const tag = await getTagBySlug(db, slug || '');
-const allPosts = await getUnifiedPosts(db);
+const allPosts = await getUnifiedPosts(db, { status: 'PUBLISHED' });
 const filteredPosts = allPosts.filter((p) =>
 	(p.tags || []).some((t) => t.toLowerCase() === (slug || '').toLowerCase())
 );
