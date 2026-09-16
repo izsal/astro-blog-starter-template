@@ -28,7 +28,7 @@
 	"d1_databases": [
 		{
 			"binding": "my-binding",
-			"database_name": "qblog-db",
+			"database_name": "my-binding",
 			"database_id": "bda4401a-4baf-48e6-9ad9-a63e253ff2a9"
 		}
 	]
