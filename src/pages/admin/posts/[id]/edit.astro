@@ -1,0 +1,1284 @@
+---
+import BaseHead from "../../../../components/BaseHead.astro";
+import { SITE_TITLE } from "../../../../consts";
+import { verifyAdminSession } from "../../../../lib/admin-auth";
+import { getD1Database } from "../../../../lib/db";
+import { getCategories } from "../../../../lib/categories";
+import { getUnifiedPosts, getPostRevisions } from "../../../../lib/posts";
+
+export const prerender = false;
+
+const cookie = Astro.request.headers.get("cookie");
+if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
+	return Astro.redirect("/admin");
+}
+
+const { id } = Astro.params;
+if (!id) {
+	return Astro.redirect("/admin/posts");
+}
+
+const db = getD1Database(Astro.locals);
+const categories = await getCategories(db);
+const rawPosts = await getUnifiedPosts(db);
+const existingPosts = rawPosts.map((p) => ({
+	title: p.title,
+	slug: p.slug,
+	category: p.category || "",
+	tags: p.tags || [],
+}));
+
+// Fetch post to edit from D1 first, then fallback to unified
+let post: any = null;
+if (db) {
+	try {
+		post = await db.prepare("SELECT * FROM posts WHERE id = ? OR slug = ?").bind(id, id).first();
+	} catch (e) {
+		console.warn("Could not fetch post from D1:", e);
+	}
+}
+
+if (!post) {
+	const match = rawPosts.find((p) => p.id === id || p.slug === id);
+	if (match) {
+		post = {
+			id: match.id,
+			title: match.title,
+			slug: match.slug,
+			excerpt: match.excerpt,
+			content: match.content || "",
+			status: match.status || "PUBLISHED",
+			category_id: match.category_id || categories[0]?.id || "",
+			cover_image: match.cover_image || "/blog-placeholder-1.jpg",
+			focus_keyword: match.focus_keyword || "",
+			search_intent: match.search_intent || "Informational",
+			featured: match.featured ? 1 : 0,
+			scheduled_at: match.scheduled_at || "",
+			canonical_url: "",
+			og_image: match.cover_image || "",
+			seo_score: match.seo_score || 85,
+		};
+	}
+}
+
+if (!post) {
+	return Astro.redirect("/admin/posts");
+}
+
+const revisions = db ? await getPostRevisions(db, post.id) : [];
+---
+
+<!doctype html>
+<html lang="id">
+	<head>
+		<BaseHead
+			title={`Edit: ${post.title} — Admin ${SITE_TITLE}`}
+			description="Edit artikel di Content Command Center qblog."
+		/>
+	</head>
+	<body class="editor-body">
+		<div class="editor-container">
+			<div class="editor-top">
+				<div class="top-nav-row">
+					<a href="/admin/posts" class="back-link">&larr; Batal & Kembali ke Daftar Artikel</a>
+					<!-- Autosave Bar -->
+					<div class="autosave-badge-box">
+						<span id="autosave-time" class="autosave-status">● Siap diedit</span>
+						<a href={`/blog/${post.slug}/`} target="_blank" class="btn-preview-live">
+							Lihat di Blog ↗
+						</a>
+					</div>
+				</div>
+
+				<div class="title-header-box">
+					<h1 class="page-title">
+						Edit Artikel: <span class="gradient-text">{post.title}</span>
+					</h1>
+					<p class="page-subtitle">
+						ID: <code>{post.id}</code> • Terakhir diupdate: {post.updated_at ? new Date(post.updated_at).toLocaleString('id-ID') : 'Baru saja'}
+					</p>
+				</div>
+			</div>
+
+			<div class="editor-layout">
+				<!-- Left: Editor Form -->
+				<div class="form-column">
+					<form id="post-edit-form" class="editor-form glass-card" data-post-id={post.id}>
+						<div class="form-group">
+							<label for="post-title">Judul Artikel (Title)</label>
+							<input
+								type="text"
+								id="post-title"
+								value={post.title}
+								required
+								class="input-field"
+							/>
+						</div>
+
+						<div class="form-group">
+							<label for="post-slug">Slug URL (Permalink)</label>
+							<div class="slug-input-wrapper">
+								<span class="slug-prefix">qblog.qwarts.my.id/blog/</span>
+								<input
+									type="text"
+									id="post-slug"
+									value={post.slug}
+									required
+									class="input-field mono-field"
+								/>
+							</div>
+						</div>
+
+						<div class="form-row">
+							<div class="form-group">
+								<label for="post-category">Kategori Cluster</label>
+								<select id="post-category" class="input-field select-field">
+									{
+										categories.map((c) => (
+											<option value={c.id} selected={c.id === post.category_id}>
+												{c.name}
+											</option>
+										))
+									}
+								</select>
+							</div>
+
+							<div class="form-group">
+								<label for="post-status">Status Publikasi</label>
+								<select id="post-status" class="input-field select-field">
+									<option value="PUBLISHED" selected={post.status === "PUBLISHED"}>
+										PUBLISHED (Tayang)
+									</option>
+									<option value="DRAFT" selected={post.status === "DRAFT"}>
+										DRAFT (Simpan Draft)
+									</option>
+									<option value="SCHEDULED" selected={post.status === "SCHEDULED"}>
+										SCHEDULED (Jadwalkan)
+									</option>
+								</select>
+							</div>
+						</div>
+
+						<!-- Scheduled Date Group -->
+						<div
+							class="form-group"
+							id="scheduled-group"
+							style={post.status === "SCHEDULED" ? "display: block;" : "display: none;"}
+						>
+							<label for="post-scheduled-at">Waktu Tayang Terjadwal</label>
+							<input
+								type="datetime-local"
+								id="post-scheduled-at"
+								value={post.scheduled_at || ""}
+								class="input-field"
+							/>
+						</div>
+
+						<!-- Featured Post Checkbox -->
+						<div class="form-group checkbox-row">
+							<label class="checkbox-container">
+								<input type="checkbox" id="post-featured" checked={Boolean(post.featured)} />
+								<span class="checkbox-custom"></span>
+								<span class="checkbox-label">
+									Tandai sebagai <strong>Featured Article</strong> (Tampil di hero card utama)
+								</span>
+							</label>
+						</div>
+
+						<div class="form-row">
+							<div class="form-group">
+								<label for="post-keyword">Focus Keyword (Target Utama)</label>
+								<input
+									type="text"
+									id="post-keyword"
+									value={post.focus_keyword || ""}
+									placeholder="e.g. Astro Cloudflare D1"
+									class="input-field"
+								/>
+							</div>
+
+							<div class="form-group">
+								<label for="post-intent">Search Intent</label>
+								<select id="post-intent" class="input-field select-field">
+									<option value="Informational" selected={post.search_intent === "Informational"}>
+										Informational (Tutorial & Konsep)
+									</option>
+									<option value="Commercial" selected={post.search_intent === "Commercial"}>
+										Commercial (Komparasi & Evaluasi)
+									</option>
+									<option value="Transactional" selected={post.search_intent === "Transactional"}>
+										Transactional (Download & Tools)
+									</option>
+									<option value="Navigational" selected={post.search_intent === "Navigational"}>
+										Navigational (Brand & Reference)
+									</option>
+								</select>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="post-excerpt">Excerpt / Meta Description</label>
+							<textarea
+								id="post-excerpt"
+								rows="3"
+								required
+								class="input-field"
+							>{post.excerpt}</textarea>
+						</div>
+
+						<!-- Content Tabs: Markdown Editor vs Live Preview -->
+						<div class="content-header-row">
+							<label>Konten Artikel (Markdown)</label>
+							<div class="editor-tabs">
+								<button type="button" class="tab-btn active" id="tab-write">Tulis Markdown</button>
+								<button type="button" class="tab-btn" id="tab-preview">Live Preview</button>
+							</div>
+						</div>
+
+						<div id="write-container">
+							<textarea
+								id="post-content"
+								rows="24"
+								required
+								class="input-field content-textarea"
+							>{post.content}</textarea>
+						</div>
+
+						<div id="preview-container" class="preview-box" style="display: none;">
+							<div id="preview-content" class="preview-content"></div>
+						</div>
+
+						<!-- Revision Note -->
+						<div class="form-group">
+							<label for="post-revision-note">Catatan Pembaruan (Revision Note)</label>
+							<input
+								type="text"
+								id="post-revision-note"
+								placeholder="e.g. Memperbarui dependensi, menambah internal link"
+								class="input-field"
+							/>
+						</div>
+
+						<!-- Advanced SEO Collapsible -->
+						<details class="advanced-seo-details">
+							<summary class="advanced-seo-summary">⚙️ Pengaturan SEO Lanjutan (Canonical & OG Image)</summary>
+							<div class="form-row" style="margin-top: 1rem;">
+								<div class="form-group">
+									<label for="post-canonical">Canonical URL</label>
+									<input
+										type="url"
+										id="post-canonical"
+										value={post.canonical_url || ""}
+										placeholder="https://qblog.qwarts.my.id/blog/..."
+										class="input-field mono-field"
+									/>
+								</div>
+								<div class="form-group">
+									<label for="post-og-image">OG Image URL</label>
+									<input
+										type="text"
+										id="post-og-image"
+										value={post.og_image || post.cover_image || ""}
+										placeholder="/blog-placeholder-1.jpg"
+										class="input-field"
+									/>
+								</div>
+							</div>
+						</details>
+
+						<button type="submit" class="btn btn-primary submit-btn" id="save-post-btn">
+							💾 Simpan Perubahan ke Cloudflare D1
+						</button>
+
+						<div id="save-status" class="status-msg"></div>
+					</form>
+				</div>
+
+				<!-- Right: SEO Health Score & Smart Link Suggestions & Revisions -->
+				<div class="sidebar-column">
+					<!-- SEO Score Card -->
+					<div class="glass-card seo-panel">
+						<div class="seo-score-circle" id="score-circle">
+							<span class="score-number" id="score-val">{post.seo_score || 85}</span>
+							<span class="score-text">SEO SCORE</span>
+						</div>
+
+						<h3 class="checklist-title">Realtime SEO Health Checklist</h3>
+						<div class="checklist-items">
+							<div class="check-item" id="chk-title">
+								<span class="chk-icon">○</span>
+								<span>Panjang judul optimal (35-75 karakter)</span>
+							</div>
+							<div class="check-item" id="chk-slug">
+								<span class="chk-icon">○</span>
+								<span>Format slug URL ramah SEO</span>
+							</div>
+							<div class="check-item" id="chk-keyword">
+								<span class="chk-icon">○</span>
+								<span>Focus keyword ada di Judul & Excerpt</span>
+							</div>
+							<div class="check-item" id="chk-desc">
+								<span class="chk-icon">○</span>
+								<span>Meta description memadai (70-180 karakter)</span>
+							</div>
+							<div class="check-item" id="chk-h1">
+								<span class="chk-icon">○</span>
+								<span>Memiliki Heading # H1 di dalam konten</span>
+							</div>
+							<div class="check-item" id="chk-words">
+								<span class="chk-icon">○</span>
+								<span>Panjang konten memadai (&ge; 150 kata)</span>
+							</div>
+							<div class="check-item" id="chk-links">
+								<span class="chk-icon">○</span>
+								<span>Memiliki setidaknya 1 Internal Link</span>
+							</div>
+						</div>
+
+						<div class="seo-hints-box" id="seo-hints">
+							<strong>Saran:</strong> Analisis SEO terhitung secara otomatis saat kamu mengedit.
+						</div>
+					</div>
+
+					<!-- Smart Link Suggestions -->
+					<div class="glass-card smart-link-panel">
+						<div class="link-panel-header">
+							<div class="link-title-group">
+								<span class="panel-icon">🔗</span>
+								<h3 class="link-panel-title">Smart Link Suggestions</h3>
+							</div>
+							<span class="pill pill-cyan">Intelligence</span>
+						</div>
+						<p class="panel-sub">
+							Rekomendasi tautan internal kontekstual untuk topic clustering.
+						</p>
+
+						<div id="link-suggestions-list" class="suggestions-list">
+							<p class="empty-suggestions">Memuat saran internal links...</p>
+						</div>
+					</div>
+
+					<!-- Revision History Timeline -->
+					<div class="glass-card revisions-panel">
+						<div class="link-panel-header">
+							<div class="link-title-group">
+								<span class="panel-icon">⏱️</span>
+								<h3 class="link-panel-title">Riwayat Revisi ({revisions.length})</h3>
+							</div>
+							<span class="pill pill-emerald">D1 Log</span>
+						</div>
+
+						<div class="revisions-list">
+							{
+								revisions.length === 0 ? (
+									<p class="empty-suggestions">Belum ada catatan revisi tersimpan.</p>
+								) : (
+									revisions.map((rev) => (
+										<div class="rev-item">
+											<div class="rev-top">
+												<span class="rev-date">
+													{new Date(rev.created_at).toLocaleString("id-ID")}
+												</span>
+											</div>
+											<p class="rev-note">{rev.revision_note || "Pembaruan konten"}</p>
+										</div>
+									))
+								)
+							}
+						</div>
+					</div>
+
+					<script
+						id="existing-posts-data"
+						type="application/json"
+						set:html={JSON.stringify(existingPosts)}
+					/>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			const form = document.getElementById("post-edit-form") as HTMLFormElement | null;
+			const postId = form?.dataset.postId || "";
+			const titleInput = document.getElementById("post-title") as HTMLInputElement | null;
+			const slugInput = document.getElementById("post-slug") as HTMLInputElement | null;
+			const excerptInput = document.getElementById("post-excerpt") as HTMLTextAreaElement | null;
+			const contentInput = document.getElementById("post-content") as HTMLTextAreaElement | null;
+			const categorySelect = document.getElementById("post-category") as HTMLSelectElement | null;
+			const statusSelect = document.getElementById("post-status") as HTMLSelectElement | null;
+			const keywordInput = document.getElementById("post-keyword") as HTMLInputElement | null;
+			const intentSelect = document.getElementById("post-intent") as HTMLSelectElement | null;
+			const scheduledGroup = document.getElementById("scheduled-group");
+			const scheduledInput = document.getElementById("post-scheduled-at") as HTMLInputElement | null;
+			const featuredInput = document.getElementById("post-featured") as HTMLInputElement | null;
+			const canonicalInput = document.getElementById("post-canonical") as HTMLInputElement | null;
+			const ogImageInput = document.getElementById("post-og-image") as HTMLInputElement | null;
+			const revisionNoteInput = document.getElementById("post-revision-note") as HTMLInputElement | null;
+
+			const tabWrite = document.getElementById("tab-write");
+			const tabPreview = document.getElementById("tab-preview");
+			const writeContainer = document.getElementById("write-container");
+			const previewContainer = document.getElementById("preview-container");
+			const previewContent = document.getElementById("preview-content");
+
+			const autosaveTime = document.getElementById("autosave-time");
+			const submitBtn = document.getElementById("save-post-btn") as HTMLButtonElement | null;
+			const statusEl = document.getElementById("save-status");
+
+			const scoreVal = document.getElementById("score-val");
+			const scoreCircle = document.getElementById("score-circle");
+			const hintsBox = document.getElementById("seo-hints");
+
+			const chkTitle = document.getElementById("chk-title");
+			const chkSlug = document.getElementById("chk-slug");
+			const chkKeyword = document.getElementById("chk-keyword");
+			const chkDesc = document.getElementById("chk-desc");
+			const chkH1 = document.getElementById("chk-h1");
+			const chkWords = document.getElementById("chk-words");
+			const chkLinks = document.getElementById("chk-links");
+
+			// Toggle scheduled date input
+			if (statusSelect && scheduledGroup) {
+				statusSelect.addEventListener("change", () => {
+					scheduledGroup.style.display =
+						statusSelect.value === "SCHEDULED" ? "block" : "none";
+				});
+			}
+
+			// Listen to inputs for realtime updates
+			if (titleInput) titleInput.addEventListener("input", triggerUpdate);
+			if (slugInput) slugInput.addEventListener("input", triggerUpdate);
+			if (excerptInput) excerptInput.addEventListener("input", triggerUpdate);
+			if (contentInput) contentInput.addEventListener("input", triggerUpdate);
+			if (keywordInput) keywordInput.addEventListener("input", triggerUpdate);
+
+			function triggerUpdate() {
+				updateSeoScore();
+				updateSmartSuggestions();
+				triggerAutosave();
+			}
+
+			// Tab switcher
+			if (tabWrite && tabPreview && writeContainer && previewContainer && previewContent) {
+				tabWrite.addEventListener("click", () => {
+					tabWrite.classList.add("active");
+					tabPreview.classList.remove("active");
+					writeContainer.style.display = "block";
+					previewContainer.style.display = "none";
+				});
+
+				tabPreview.addEventListener("click", () => {
+					tabPreview.classList.add("active");
+					tabWrite.classList.remove("active");
+					writeContainer.style.display = "none";
+					previewContainer.style.display = "block";
+					renderPreview();
+				});
+			}
+
+			function renderPreview() {
+				if (!previewContent || !contentInput) return;
+				previewContent.innerHTML = parseMarkdownSimple(contentInput.value || "*Konten kosong*");
+			}
+
+			function parseMarkdownSimple(md: string): string {
+				let html = md
+					.replace(/&/g, "&amp;")
+					.replace(/</g, "&lt;")
+					.replace(/>/g, "&gt;")
+					.replace(/^### (.*$)/gim, "<h3>$1</h3>")
+					.replace(/^## (.*$)/gim, "<h2>$1</h2>")
+					.replace(/^# (.*$)/gim, "<h1>$1</h1>")
+					.replace(/^\> (.*$)/gim, "<blockquote>$1</blockquote>")
+					.replace(/\*\*(.*)\*\*/gim, "<strong>$1</strong>")
+					.replace(/\*(.*)\*/gim, "<em>$1</em>")
+					.replace(/!\[(.*?)\]\((.*?)\)/gim, '<img alt="$1" src="$2" class="preview-img" />')
+					.replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" target="_blank">$1</a>')
+					.replace(/`([^`]+)`/gim, "<code>$1</code>")
+					.replace(/\n\n/gim, "</p><p>")
+					.replace(/\n/gim, "<br/>");
+				return `<p>${html}</p>`;
+			}
+
+			// Autosave
+			let autosaveTimer: any = null;
+			function triggerAutosave() {
+				if (autosaveTimer) clearTimeout(autosaveTimer);
+				autosaveTimer = setTimeout(() => {
+					if (autosaveTime) {
+						const timeStr = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+						autosaveTime.textContent = `● Terakhir diedit (${timeStr})`;
+					}
+				}, 1000);
+			}
+
+			function updateSeoScore() {
+				const title = titleInput?.value || "";
+				const slug = slugInput?.value || "";
+				const desc = excerptInput?.value || "";
+				const content = contentInput?.value || "";
+				const kw = (keywordInput?.value || "").trim().toLowerCase();
+
+				let score = 0;
+				const hints: string[] = [];
+
+				if (title.length >= 35 && title.length <= 75) {
+					score += 20;
+					setCheck(chkTitle, true);
+				} else {
+					setCheck(chkTitle, false);
+					if (title.length < 35) hints.push("Judul terlalu pendek (ideal 40-70 karakter).");
+				}
+
+				if (slug.length >= 3 && /^[a-z0-9-]+$/.test(slug)) {
+					score += 15;
+					setCheck(chkSlug, true);
+				} else {
+					setCheck(chkSlug, false);
+					hints.push("Slug sebaiknya huruf kecil dan tanda strip (-).");
+				}
+
+				const titleHasKw = kw && title.toLowerCase().includes(kw);
+				const descHasKw = kw && desc.toLowerCase().includes(kw);
+				if (titleHasKw || descHasKw) {
+					score += 20;
+					setCheck(chkKeyword, true);
+				} else {
+					setCheck(chkKeyword, false);
+					if (kw.length > 2) {
+						hints.push(`Sertakan focus keyword "${kw}" di dalam judul.`);
+					} else {
+						hints.push("Tentukan Focus Keyword untuk artikel ini.");
+					}
+				}
+
+				if (desc.length >= 70 && desc.length <= 180) {
+					score += 15;
+					setCheck(chkDesc, true);
+				} else {
+					setCheck(chkDesc, false);
+					if (desc.length < 70) hints.push("Meta description terlalu pendek (80-160 karakter).");
+				}
+
+				if (/^#\s+[^\n]+/m.test(content) || title.length > 0) {
+					score += 10;
+					setCheck(chkH1, true);
+				} else {
+					setCheck(chkH1, false);
+					hints.push("Tambahkan heading # H1 di dalam konten.");
+				}
+
+				const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+				if (wordCount >= 150) {
+					score += 15;
+					setCheck(chkWords, true);
+				} else {
+					setCheck(chkWords, false);
+					hints.push(`Jumlah kata: ${wordCount}. Target minimal: 150 kata.`);
+				}
+
+				if (/\[.*?\]\(\/blog\/.*?\)/.test(content)) {
+					score += 5;
+					setCheck(chkLinks, true);
+				} else {
+					setCheck(chkLinks, false);
+					hints.push("Tambahkan setidaknya 1 internal link kontekstual.");
+				}
+
+				if (scoreVal) scoreVal.textContent = String(score);
+				if (scoreCircle) {
+					scoreCircle.style.borderColor = score >= 80 ? "#10b981" : score >= 50 ? "#f59e0b" : "#ef4444";
+				}
+
+				if (hintsBox) {
+					hintsBox.innerHTML = hints.length > 0
+						? "<strong>Rekomendasi SEO:</strong><br/>• " + hints.join("<br/>• ")
+						: '<strong style="color: #34d399;">✓ Seluruh kriteria SEO terpenuhi dengan baik!</strong>';
+				}
+			}
+
+			function setCheck(el: HTMLElement | null, pass: boolean) {
+				if (!el) return;
+				const icon = el.querySelector(".chk-icon");
+				if (icon) {
+					icon.textContent = pass ? "✓" : "○";
+					(icon as HTMLElement).style.color = pass ? "#10b981" : "var(--text-muted)";
+				}
+				el.style.color = pass ? "#ffffff" : "var(--text-secondary)";
+			}
+
+			// Smart Internal Linking
+			const rawPostsJson = document.getElementById("existing-posts-data")?.textContent;
+			const candidatePosts: Array<{ title: string; slug: string; category: string; tags: string[] }> =
+				rawPostsJson ? JSON.parse(rawPostsJson) : [];
+			const suggestionsList = document.getElementById("link-suggestions-list");
+
+			function updateSmartSuggestions() {
+				if (!suggestionsList || candidatePosts.length === 0) return;
+				const content = (contentInput?.value || "").toLowerCase();
+				const title = (titleInput?.value || "").toLowerCase();
+				const combined = `${title} ${content}`;
+
+				const matches: Array<{ post: typeof candidatePosts[0]; matchedBy: string; isLinked: boolean; score: number }> = [];
+
+				candidatePosts.forEach((p) => {
+					if (p.slug === slugInput?.value) return; // exclude self
+					const isLinked = content.includes(`/blog/${p.slug}`) || content.includes(p.slug);
+					let score = 0;
+					let matchReason = "";
+
+					if (combined.includes(p.title.toLowerCase())) {
+						score += 50;
+						matchReason = "Judul artikel cocok persis";
+					} else {
+						const words = p.title.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+						const matchedWords = words.filter((w) => combined.includes(w));
+						if (matchedWords.length >= 2) {
+							score += matchedWords.length * 12;
+							matchReason = `Keyword: "${matchedWords.slice(0, 2).join(", ")}"`;
+						}
+					}
+
+					p.tags.forEach((tag) => {
+						if (tag && combined.includes(tag.toLowerCase())) {
+							score += 20;
+							if (!matchReason) matchReason = `Topik tag: "${tag}"`;
+						}
+					});
+
+					if (score > 0) {
+						matches.push({ post: p, matchedBy: matchReason || "Topik relevan", isLinked, score });
+					}
+				});
+
+				matches.sort((a, b) => b.score - a.score);
+				const topMatches = matches.slice(0, 4);
+
+				if (topMatches.length === 0) {
+					suggestionsList.innerHTML = '<p class="empty-suggestions">Belum ada artikel relevan yang cocok dengan topik ini.</p>';
+					return;
+				}
+
+				suggestionsList.innerHTML = topMatches
+					.map(
+						(m) => `
+					<div class="suggestion-item ${m.isLinked ? "is-linked" : ""}">
+						<div class="suggestion-info">
+							<strong class="suggestion-title">${escapeHtml(m.post.title)}</strong>
+							<span class="suggestion-reason">${escapeHtml(m.matchedBy)}</span>
+						</div>
+						<div class="suggestion-actions">
+							${
+								m.isLinked
+									? '<span class="pill pill-emerald pill-xs">Tertaut ✓</span>'
+									: `<button type="button" class="btn-insert-link" data-slug="${m.post.slug}" data-title="${escapeHtml(m.post.title)}">+ Sisipkan Link</button>`
+							}
+							<span class="suggestion-cat">${m.post.category}</span>
+						</div>
+					</div>
+				`
+					)
+					.join("");
+
+				suggestionsList.querySelectorAll(".btn-insert-link").forEach((btn) => {
+					btn.addEventListener("click", () => {
+						const linkTitle = btn.getAttribute("data-title") || "";
+						const linkSlug = btn.getAttribute("data-slug") || "";
+						insertInternalLink(linkTitle, linkSlug);
+					});
+				});
+			}
+
+			function escapeHtml(str: string) {
+				return str.replace(/[&<>"']/g, (m) => (({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m] || m));
+			}
+
+			function insertInternalLink(title: string, slug: string) {
+				if (!contentInput) return;
+				const linkMd = `[${title}](/blog/${slug})`;
+				const start = contentInput.selectionStart;
+				const end = contentInput.selectionEnd;
+				const text = contentInput.value;
+
+				if (start !== undefined && end !== undefined && start !== end) {
+					const selected = text.substring(start, end);
+					contentInput.value = text.substring(0, start) + `[${selected}](/blog/${slug})` + text.substring(end);
+				} else if (start !== undefined) {
+					contentInput.value = text.substring(0, start) + linkMd + text.substring(start);
+				} else {
+					contentInput.value += `\n${linkMd}\n`;
+				}
+				triggerUpdate();
+			}
+
+			// Form submission via PATCH
+			if (form && submitBtn && statusEl) {
+				form.addEventListener("submit", async (e) => {
+					e.preventDefault();
+					submitBtn.disabled = true;
+					statusEl.textContent = "Menyimpan pembaruan ke Cloudflare D1...";
+					statusEl.className = "status-msg info";
+
+					const payload = {
+						title: titleInput?.value.trim(),
+						slug: slugInput?.value.trim(),
+						excerpt: excerptInput?.value.trim(),
+						content: contentInput?.value.trim(),
+						category_id: categorySelect?.value,
+						status: statusSelect?.value || "PUBLISHED",
+						scheduled_at: scheduledInput?.value || null,
+						featured: Boolean(featuredInput?.checked),
+						focus_keyword: keywordInput?.value.trim() || null,
+						search_intent: intentSelect?.value || "Informational",
+						canonical_url: canonicalInput?.value.trim() || null,
+						og_image: ogImageInput?.value.trim() || null,
+						seo_score: Number(scoreVal?.textContent || 85),
+						revision_note: revisionNoteInput?.value.trim() || "Pembaruan artikel",
+					};
+
+					try {
+						const res = await fetch(`/admin/api/posts/${postId}`, {
+							method: "PATCH",
+							headers: { "Content-Type": "application/json" },
+							body: JSON.stringify(payload),
+						});
+
+						const data = (await res.json()) as any;
+						if (res.ok && data.success) {
+							statusEl.textContent = "✓ Artikel berhasil diperbarui!";
+							statusEl.className = "status-msg success";
+							setTimeout(() => {
+								window.location.href = "/admin/posts";
+							}, 1000);
+						} else {
+							statusEl.textContent = "✕ Gagal menyimpan: " + (data.error || "Server error");
+							statusEl.className = "status-msg error";
+							submitBtn.disabled = false;
+						}
+					} catch (err) {
+						statusEl.textContent = "✕ Terjadi kesalahan koneksi.";
+						statusEl.className = "status-msg error";
+						submitBtn.disabled = false;
+					}
+				});
+			}
+
+			// Initial evaluation
+			updateSeoScore();
+			updateSmartSuggestions();
+		</script>
+	</body>
+</html>
+
+<style>
+	.editor-body {
+		background: #080b12;
+		color: var(--text-primary);
+		min-height: 100vh;
+		padding: 2rem 1.5rem 4rem;
+	}
+
+	.editor-container {
+		max-width: 1320px;
+		margin: 0 auto;
+	}
+
+	.editor-top {
+		margin-bottom: 2rem;
+	}
+
+	.top-nav-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1rem;
+	}
+
+	.back-link {
+		color: var(--text-muted);
+		text-decoration: none;
+		font-size: 0.9rem;
+		transition: color 0.2s;
+	}
+
+	.back-link:hover {
+		color: var(--primary-light);
+	}
+
+	.autosave-badge-box {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.autosave-status {
+		font-size: 0.8rem;
+		color: #10b981;
+		font-family: "JetBrains Mono", monospace;
+	}
+
+	.btn-preview-live {
+		background: rgba(56, 189, 248, 0.1);
+		border: 1px solid rgba(56, 189, 248, 0.3);
+		color: #38bdf8;
+		padding: 0.25rem 0.65rem;
+		border-radius: 4px;
+		font-size: 0.78rem;
+		text-decoration: none;
+		transition: all 0.2s;
+	}
+
+	.btn-preview-live:hover {
+		background: rgba(56, 189, 248, 0.2);
+	}
+
+	.page-title {
+		font-size: 1.8rem;
+		margin: 0 0 0.3rem 0;
+	}
+
+	.page-subtitle {
+		font-size: 0.88rem;
+		color: var(--text-muted);
+		margin: 0;
+	}
+
+	.page-subtitle code {
+		background: rgba(255, 255, 255, 0.08);
+		padding: 0.15rem 0.35rem;
+		border-radius: 4px;
+		color: #38bdf8;
+	}
+
+	.gradient-text {
+		background: linear-gradient(135deg, #ffffff, #38bdf8);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
+
+	.editor-layout {
+		display: grid;
+		grid-template-columns: 1.6fr 1fr;
+		gap: 2rem;
+		align-items: start;
+	}
+
+	.editor-form {
+		padding: 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.45rem;
+	}
+
+	.form-group label {
+		font-size: 0.88rem;
+		font-weight: 600;
+		color: var(--text-primary);
+	}
+
+	.input-field {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 0.8rem 1rem;
+		border-radius: var(--radius-sm);
+		background: #0d121f;
+		border: 1px solid var(--border-subtle);
+		color: #ffffff;
+		font-size: 0.95rem;
+		outline: none;
+		transition: var(--transition-smooth);
+	}
+
+	.input-field:focus {
+		border-color: var(--primary);
+		box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+	}
+
+	.mono-field {
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.9rem;
+	}
+
+	.slug-input-wrapper {
+		display: flex;
+		align-items: center;
+		background: #0d121f;
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-sm);
+		padding-left: 0.75rem;
+	}
+
+	.slug-prefix {
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		white-space: nowrap;
+	}
+
+	.slug-input-wrapper .input-field {
+		border: none;
+		background: transparent;
+		padding-left: 0.4rem;
+	}
+
+	.form-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+
+	.checkbox-row {
+		padding: 0.5rem 0;
+	}
+
+	.checkbox-container {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		cursor: pointer;
+		font-size: 0.88rem;
+		color: var(--text-secondary);
+	}
+
+	.checkbox-container input {
+		width: 16px;
+		height: 16px;
+		cursor: pointer;
+	}
+
+	.content-header-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.content-header-row label {
+		font-size: 0.88rem;
+		font-weight: 600;
+	}
+
+	.editor-tabs {
+		display: flex;
+		gap: 0.25rem;
+		background: rgba(255, 255, 255, 0.04);
+		padding: 0.25rem;
+		border-radius: 6px;
+	}
+
+	.tab-btn {
+		background: none;
+		border: none;
+		color: var(--text-muted);
+		padding: 0.3rem 0.75rem;
+		font-size: 0.8rem;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: var(--transition-smooth);
+	}
+
+	.tab-btn.active {
+		background: var(--primary);
+		color: #ffffff;
+	}
+
+	#write-container {
+		width: 100%;
+	}
+
+	#post-content,
+	.content-textarea {
+		width: 100%;
+		box-sizing: border-box;
+		min-height: 520px;
+		height: 580px;
+		font-family: "JetBrains Mono", monospace;
+		font-size: 0.95rem;
+		line-height: 1.7;
+		resize: vertical;
+		padding: 1.25rem;
+		border-radius: var(--radius-sm);
+	}
+
+	.preview-box {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 1.5rem;
+		border: 1px solid var(--border-subtle);
+		background: #090d16;
+		border-radius: var(--radius-sm);
+		min-height: 520px;
+		line-height: 1.65;
+	}
+
+	.preview-content h1,
+	.preview-content h2,
+	.preview-content h3 {
+		color: #ffffff;
+		margin-top: 1rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.preview-content blockquote {
+		border-left: 3px solid var(--primary);
+		padding-left: 1rem;
+		color: #a5b4fc;
+		font-style: italic;
+	}
+
+	.preview-content code {
+		background: rgba(255, 255, 255, 0.08);
+		padding: 0.2rem 0.4rem;
+		border-radius: 4px;
+		font-family: "JetBrains Mono", monospace;
+	}
+
+	.preview-content img {
+		max-width: 100%;
+		border-radius: 8px;
+		margin: 1rem 0;
+	}
+
+	.advanced-seo-details {
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-sm);
+		padding: 1rem;
+	}
+
+	.advanced-seo-summary {
+		font-size: 0.88rem;
+		font-weight: 600;
+		color: var(--text-secondary);
+		cursor: pointer;
+	}
+
+	.submit-btn {
+		width: 100%;
+		padding: 1rem;
+		font-size: 1rem;
+		font-weight: 700;
+		margin-top: 0.5rem;
+	}
+
+	.status-msg {
+		font-size: 0.9rem;
+		text-align: center;
+		margin: 0;
+	}
+
+	.status-msg.success { color: #34d399; }
+	.status-msg.error { color: #f87171; }
+	.status-msg.info { color: #93c5fd; }
+
+	/* SEO Panel */
+	.seo-panel {
+		padding: 1.75rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.seo-score-circle {
+		width: 120px;
+		height: 120px;
+		border-radius: 50%;
+		border: 6px solid #10b981;
+		margin: 0 auto;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background: rgba(16, 185, 129, 0.06);
+		transition: border-color 0.3s;
+	}
+
+	.score-number {
+		font-size: 2.2rem;
+		font-weight: 800;
+		color: #ffffff;
+		line-height: 1;
+	}
+
+	.score-text {
+		font-size: 0.65rem;
+		letter-spacing: 0.1em;
+		color: var(--text-muted);
+		margin-top: 0.25rem;
+	}
+
+	.checklist-title {
+		font-size: 1rem;
+		margin: 0;
+		text-align: center;
+	}
+
+	.checklist-items {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	}
+
+	.check-item {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+		transition: color 0.2s;
+	}
+
+	.chk-icon {
+		font-weight: 700;
+		font-size: 1rem;
+	}
+
+	.seo-hints-box {
+		padding: 0.8rem;
+		background: rgba(255, 255, 255, 0.03);
+		border-radius: var(--radius-sm);
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+		line-height: 1.5;
+	}
+
+	/* Smart Link Panel */
+	.smart-link-panel {
+		padding: 1.5rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.link-panel-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.5rem;
+	}
+
+	.link-title-group {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.link-panel-title {
+		font-size: 0.95rem;
+		margin: 0;
+	}
+
+	.panel-sub {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		margin: 0 0 1rem 0;
+	}
+
+	.suggestions-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.empty-suggestions {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		text-align: center;
+		padding: 1rem;
+		margin: 0;
+	}
+
+	.suggestion-item {
+		padding: 0.8rem;
+		background: rgba(255, 255, 255, 0.03);
+		border: 1px solid var(--border-subtle);
+		border-radius: var(--radius-sm);
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.suggestion-item.is-linked {
+		border-color: rgba(16, 185, 129, 0.3);
+		background: rgba(16, 185, 129, 0.03);
+	}
+
+	.suggestion-title {
+		font-size: 0.85rem;
+		color: #ffffff;
+		display: block;
+	}
+
+	.suggestion-reason {
+		font-size: 0.72rem;
+		color: #38bdf8;
+	}
+
+	.suggestion-actions {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.btn-insert-link {
+		background: var(--primary);
+		color: #ffffff;
+		border: none;
+		padding: 0.25rem 0.6rem;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		cursor: pointer;
+		font-weight: 600;
+	}
+
+	.suggestion-cat {
+		font-size: 0.72rem;
+		color: var(--text-muted);
+	}
+
+	/* Revisions Panel */
+	.revisions-panel {
+		padding: 1.5rem;
+	}
+
+	.revisions-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	}
+
+	.rev-item {
+		padding: 0.6rem 0.75rem;
+		background: rgba(255, 255, 255, 0.03);
+		border-left: 3px solid #10b981;
+		border-radius: 0 6px 6px 0;
+	}
+
+	.rev-top {
+		display: flex;
+		justify-content: space-between;
+		margin-bottom: 0.2rem;
+	}
+
+	.rev-date {
+		font-size: 0.75rem;
+		color: #94a3b8;
+		font-family: "JetBrains Mono", monospace;
+	}
+
+	.rev-note {
+		font-size: 0.8rem;
+		color: #e2e8f0;
+		margin: 0;
+	}
+
+	@media (max-width: 960px) {
+		.editor-layout {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

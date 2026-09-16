@@ -91,7 +91,7 @@ const countTrash = trashedPostsForCount.length;
 								<tr>
 									<td>
 										<div class="post-title-cell">
-											<a href={`/blog/${post.slug}/`} target="_blank" class="post-row-title">
+											<a href={`/admin/posts/${post.id}/edit`} class="post-row-title" title="Edit Artikel">
 												{post.title}
 											</a>
 											<span class="post-slug-sub">/{post.slug}</span>
@@ -124,7 +124,10 @@ const countTrash = trashedPostsForCount.length;
 									</td>
 									<td>
 										<div class="row-actions">
-											<a href={`/blog/${post.slug}/`} target="_blank" class="btn-action" title="Preview Artikel">
+											<a href={`/admin/posts/${post.id}/edit`} class="btn-action btn-edit" title="Edit Artikel">
+												✎ Edit
+											</a>
+											<a href={`/blog/${post.slug}/`} target="_blank" class="btn-action" title="Preview Artikel di Web">
 												Preview ↗
 											</a>
 											{post.is_d1 && (
@@ -353,6 +356,17 @@ const countTrash = trashedPostsForCount.length;
 	.btn-action:hover {
 		background: var(--primary);
 		color: #ffffff;
+	}
+	.btn-edit {
+		background: rgba(99, 102, 241, 0.15);
+		color: #a5b4fc;
+		border-color: rgba(99, 102, 241, 0.35);
+		font-weight: 500;
+	}
+	.btn-edit:hover {
+		background: var(--primary);
+		color: #ffffff;
+		border-color: var(--primary);
 	}
 	.text-red { color: #f87171; }
 	.text-red:hover { background: #ef4444; color: #ffffff; }

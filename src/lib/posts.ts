@@ -47,34 +47,7 @@ export async function getUnifiedPosts(
 ): Promise<UnifiedPost[]> {
 	const posts: UnifiedPost[] = [];
 
-	// 1. Fetch Astro Content Collection markdown posts (always published)
-	if (!options?.status || options.status === "ALL" || options.status === "PUBLISHED") {
-		try {
-			const mdPosts = await getCollection("blog");
-			for (const p of mdPosts) {
-				posts.push({
-					id: p.id,
-					title: p.data.title,
-					slug: p.id,
-					excerpt: p.data.description,
-					cover_image: p.data.heroImage,
-					category: "Development",
-					tags: ["Astro", "TypeScript", "Web"],
-					status: "PUBLISHED",
-					seo_score: 92,
-					published_at: p.data.pubDate.toISOString(),
-					reading_time: calculateReadingTime(p.body || p.data.description),
-					views: 1240,
-					is_d1: false,
-					is_trashed: false,
-				});
-			}
-		} catch (e) {
-			console.warn("Could not read markdown collections:", e);
-		}
-	}
-
-	// 2. Fetch D1 database posts if available
+	// 1. Fetch D1 database posts if available (dynamic posts have precedence)
 	if (db) {
 		try {
 			let query = `
@@ -138,6 +111,35 @@ export async function getUnifiedPosts(
 			}
 		} catch (err) {
 			console.error("Error fetching D1 posts:", err);
+		}
+	}
+
+	// 2. Fetch Astro Content Collection markdown posts (only if not overridden in D1)
+	if (!options?.status || options.status === "ALL" || options.status === "PUBLISHED") {
+		try {
+			const mdPosts = await getCollection("blog");
+			for (const p of mdPosts) {
+				if (!posts.some((existing) => existing.slug === p.id || existing.id === p.id)) {
+					posts.push({
+						id: p.id,
+						title: p.data.title,
+						slug: p.id,
+						excerpt: p.data.description,
+						cover_image: p.data.heroImage,
+						category: "Development",
+						tags: ["Astro", "TypeScript", "Web"],
+						status: "PUBLISHED",
+						seo_score: 92,
+						published_at: p.data.pubDate.toISOString(),
+						reading_time: calculateReadingTime(p.body || p.data.description),
+						views: 1240,
+						is_d1: false,
+						is_trashed: false,
+					});
+				}
+			}
+		} catch (e) {
+			console.warn("Could not read markdown collections:", e);
 		}
 	}
 
@@ -275,7 +277,55 @@ export async function updatePostInD1(
 	}>
 ): Promise<{ success: boolean; error?: string }> {
 	try {
-		const readingTime = data.content ? calculateReadingTime(data.content) : undefined;
+		const readingTime = data.content ? calculateReadingTime(data.content) : 1;
+
+		const existing = await db.prepare("SELECT id FROM posts WHERE id = ?").bind(id).first();
+		if (!existing) {
+			await db
+				.prepare(
+					`INSERT INTO posts (
+						id, title, slug, excerpt, content, cover_image, status,
+						published_at, updated_at, seo_title, seo_description,
+						canonical_url, og_image, focus_keyword, search_intent,
+						seo_score, featured, scheduled_at, reading_time, is_trashed
+					) VALUES (
+						?, ?, ?, ?, ?, ?, ?,
+						CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?,
+						?, ?, ?, ?,
+						?, ?, ?, ?, 0
+					)`
+				)
+				.bind(
+					id,
+					data.title || "Untitled Post",
+					data.slug || id,
+					data.excerpt || "",
+					data.content || "",
+					data.cover_image || "/blog-placeholder-1.jpg",
+					data.status || "PUBLISHED",
+					data.seo_title || data.title || null,
+					data.seo_description || data.excerpt || null,
+					data.canonical_url || null,
+					data.og_image || null,
+					data.focus_keyword || null,
+					data.search_intent || "Informational",
+					data.seo_score || 85,
+					data.featured ? 1 : 0,
+					data.scheduled_at || null,
+					readingTime
+				)
+				.run();
+
+			if (data.category_id) {
+				await db
+					.prepare("INSERT OR IGNORE INTO post_categories (post_id, category_id) VALUES (?, ?)")
+					.bind(id, data.category_id)
+					.run();
+			}
+
+			await savePostRevision(db, id, data.title || "Untitled", data.content || "", data.revision_note || "Versi awal artikel di D1");
+			return { success: true };
+		}
 
 		await db
 			.prepare(
