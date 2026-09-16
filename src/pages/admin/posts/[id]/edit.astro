@@ -32,7 +32,16 @@ const existingPosts = rawPosts.map((p) => ({
 let post: any = null;
 if (db) {
 	try {
-		post = await db.prepare("SELECT * FROM posts WHERE id = ? OR slug = ?").bind(id, id).first();
+		post = await db
+			.prepare(
+				`SELECT p.*, pc.category_id, c.name as category_name, c.slug as category_slug
+				 FROM posts p
+				 LEFT JOIN post_categories pc ON p.id = pc.post_id
+				 LEFT JOIN categories c ON pc.category_id = c.id
+				 WHERE p.id = ? OR p.slug = ?`
+			)
+			.bind(id, id)
+			.first();
 	} catch (e) {
 		console.warn("Could not fetch post from D1:", e);
 	}
@@ -41,6 +50,17 @@ if (db) {
 if (!post) {
 	const match = rawPosts.find((p) => p.id === id || p.slug === id);
 	if (match) {
+		const matchedCatId =
+			match.category_id ||
+			categories.find(
+				(c) =>
+					c.id === match.category_id ||
+					c.slug.toLowerCase() === (match.category || "").toLowerCase() ||
+					c.name.toLowerCase() === (match.category || "").toLowerCase()
+			)?.id ||
+			categories[0]?.id ||
+			"";
+
 		post = {
 			id: match.id,
 			title: match.title,
@@ -48,7 +68,7 @@ if (!post) {
 			excerpt: match.excerpt,
 			content: match.content || "",
 			status: match.status || "PUBLISHED",
-			category_id: match.category_id || categories[0]?.id || "",
+			category_id: matchedCatId,
 			cover_image: match.cover_image || "/blog-placeholder-1.jpg",
 			focus_keyword: match.focus_keyword || "",
 			search_intent: match.search_intent || "Informational",
@@ -58,6 +78,21 @@ if (!post) {
 			og_image: match.cover_image || "",
 			seo_score: match.seo_score || 85,
 		};
+	}
+}
+
+if (post && !post.category_id) {
+	const match = rawPosts.find((p) => p.id === post.id || p.slug === post.slug);
+	if (match?.category_id) {
+		post.category_id = match.category_id;
+	} else if (match?.category) {
+		const catName = match.category;
+		post.category_id = categories.find(
+			(c) =>
+				c.id === catName ||
+				c.slug.toLowerCase() === catName.toLowerCase() ||
+				c.name.toLowerCase() === catName.toLowerCase()
+		)?.id;
 	}
 }
 
@@ -134,11 +169,19 @@ const revisions = db ? await getPostRevisions(db, post.id) : [];
 								<label for="post-category">Kategori Cluster</label>
 								<select id="post-category" class="input-field select-field">
 									{
-										categories.map((c) => (
-											<option value={c.id} selected={c.id === post.category_id}>
-												{c.name}
-											</option>
-										))
+										categories.map((c) => {
+											const isSelected =
+												c.id === post.category_id ||
+												c.slug.toLowerCase() === (post.category_id || '').toLowerCase() ||
+												c.name.toLowerCase() === (post.category_id || '').toLowerCase() ||
+												c.name.toLowerCase() === (post.category_name || '').toLowerCase() ||
+												c.slug.toLowerCase() === (post.category_slug || '').toLowerCase();
+											return (
+												<option value={c.id} selected={isSelected}>
+													{c.name}
+												</option>
+											);
+										})
 									}
 								</select>
 							</div>

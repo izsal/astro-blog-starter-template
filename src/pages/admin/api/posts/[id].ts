@@ -32,7 +32,16 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
 		});
 	}
 
-	const post = await db.prepare("SELECT * FROM posts WHERE id = ?").bind(id).first();
+	const post = await db
+		.prepare(
+			`SELECT p.*, pc.category_id, c.name as category_name, c.slug as category_slug
+			 FROM posts p
+			 LEFT JOIN post_categories pc ON p.id = pc.post_id
+			 LEFT JOIN categories c ON pc.category_id = c.id
+			 WHERE p.id = ? OR p.slug = ?`
+		)
+		.bind(id, id)
+		.first();
 	return new Response(JSON.stringify({ success: true, post }), {
 		headers: { "Content-Type": "application/json" },
 	});

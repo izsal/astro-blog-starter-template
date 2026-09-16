@@ -237,9 +237,16 @@ export async function createPostInD1(
 			.run();
 
 		if (data.category_id) {
+			let catId = data.category_id;
+			const catRow = await db
+				.prepare("SELECT id FROM categories WHERE id = ? OR slug = ? OR LOWER(name) = LOWER(?)")
+				.bind(catId, catId, catId)
+				.first<{ id: string }>();
+			if (catRow?.id) catId = catRow.id;
+
 			await db
 				.prepare("INSERT OR IGNORE INTO post_categories (post_id, category_id) VALUES (?, ?)")
-				.bind(id, data.category_id)
+				.bind(id, catId)
 				.run();
 		}
 
@@ -279,7 +286,22 @@ export async function updatePostInD1(
 	try {
 		const readingTime = data.content ? calculateReadingTime(data.content) : 1;
 
-		const existing = await db.prepare("SELECT id FROM posts WHERE id = ?").bind(id).first();
+		const existing = await db
+			.prepare("SELECT id FROM posts WHERE id = ? OR slug = ?")
+			.bind(id, id)
+			.first<{ id: string }>();
+
+		const targetId = existing?.id || id;
+
+		let resolvedCatId = data.category_id;
+		if (resolvedCatId) {
+			const catRow = await db
+				.prepare("SELECT id FROM categories WHERE id = ? OR slug = ? OR LOWER(name) = LOWER(?)")
+				.bind(resolvedCatId, resolvedCatId, resolvedCatId)
+				.first<{ id: string }>();
+			if (catRow?.id) resolvedCatId = catRow.id;
+		}
+
 		if (!existing) {
 			await db
 				.prepare(
@@ -296,13 +318,13 @@ export async function updatePostInD1(
 					)`
 				)
 				.bind(
-					id,
+					targetId,
 					data.title || "Untitled Post",
-					data.slug || id,
+					data.slug || targetId,
 					data.excerpt || "",
 					data.content || "",
 					data.cover_image || "/blog-placeholder-1.jpg",
-					data.status || "PUBLISHED",
+					data.status ? data.status.toUpperCase() : "PUBLISHED",
 					data.seo_title || data.title || null,
 					data.seo_description || data.excerpt || null,
 					data.canonical_url || null,
@@ -316,14 +338,14 @@ export async function updatePostInD1(
 				)
 				.run();
 
-			if (data.category_id) {
+			if (resolvedCatId) {
 				await db
 					.prepare("INSERT OR IGNORE INTO post_categories (post_id, category_id) VALUES (?, ?)")
-					.bind(id, data.category_id)
+					.bind(targetId, resolvedCatId)
 					.run();
 			}
 
-			await savePostRevision(db, id, data.title || "Untitled", data.content || "", data.revision_note || "Versi awal artikel di D1");
+			await savePostRevision(db, targetId, data.title || "Untitled", data.content || "", data.revision_note || "Versi awal artikel di D1");
 			return { success: true };
 		}
 
@@ -355,7 +377,7 @@ export async function updatePostInD1(
 				data.excerpt ?? null,
 				data.content ?? null,
 				data.cover_image ?? null,
-				data.status ?? null,
+				data.status ? data.status.toUpperCase() : null,
 				data.seo_title ?? null,
 				data.seo_description ?? null,
 				data.canonical_url ?? null,
@@ -366,17 +388,17 @@ export async function updatePostInD1(
 				data.featured !== undefined ? (data.featured ? 1 : 0) : null,
 				data.scheduled_at ?? null,
 				readingTime ?? null,
-				id
+				targetId
 			)
 			.run();
 
-		if (data.category_id) {
-			await db.prepare("DELETE FROM post_categories WHERE post_id = ?").bind(id).run();
-			await db.prepare("INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)").bind(id, data.category_id).run();
+		if (resolvedCatId) {
+			await db.prepare("DELETE FROM post_categories WHERE post_id = ?").bind(targetId).run();
+			await db.prepare("INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)").bind(targetId, resolvedCatId).run();
 		}
 
 		if (data.content && data.title) {
-			await savePostRevision(db, id, data.title, data.content, data.revision_note || "Pembaruan berkas artikel");
+			await savePostRevision(db, targetId, data.title, data.content, data.revision_note || "Pembaruan berkas artikel");
 		}
 
 		return { success: true };
