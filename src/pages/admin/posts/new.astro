@@ -1,16 +1,16 @@
 ---
-import BaseHead from '../../../components/BaseHead.astro';
-import { SITE_TITLE } from '../../../consts';
-import { verifyAdminSession } from '../../../lib/admin-auth';
-import { getD1Database } from '../../../lib/db';
-import { getCategories } from '../../../lib/categories';
-import { getUnifiedPosts } from '../../../lib/posts';
+import BaseHead from "../../../components/BaseHead.astro";
+import { SITE_TITLE } from "../../../consts";
+import { verifyAdminSession } from "../../../lib/admin-auth";
+import { getD1Database } from "../../../lib/db";
+import { getCategories } from "../../../lib/categories";
+import { getUnifiedPosts } from "../../../lib/posts";
 
 export const prerender = false;
 
-const cookie = Astro.request.headers.get('cookie');
+const cookie = Astro.request.headers.get("cookie");
 if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
-	return Astro.redirect('/admin');
+	return Astro.redirect("/admin");
 }
 
 const db = getD1Database(Astro.locals);
@@ -19,7 +19,7 @@ const rawPosts = await getUnifiedPosts(db);
 const existingPosts = rawPosts.map((p) => ({
 	title: p.title,
 	slug: p.slug,
-	category: p.category || '',
+	category: p.category || "",
 	tags: p.tags || [],
 }));
 ---
@@ -36,11 +36,20 @@ const existingPosts = rawPosts.map((p) => ({
 		<div class="editor-container">
 			<div class="editor-top">
 				<div class="top-nav-row">
-					<a href="/admin/posts" class="back-link">&larr; Batal & Kembali ke Daftar Artikel</a>
+					<a href="/admin/posts" class="back-link"
+						>&larr; Batal & Kembali ke Daftar Artikel</a
+					>
 					<!-- Autosave Bar -->
 					<div class="autosave-badge-box">
-						<span id="autosave-time" class="autosave-status">● Draft autosaved lokal</span>
-						<button type="button" id="btn-restore-draft" class="btn-restore" style="display: none;">
+						<span id="autosave-time" class="autosave-status"
+							>● Draft autosaved lokal</span
+						>
+						<button
+							type="button"
+							id="btn-restore-draft"
+							class="btn-restore"
+							style="display: none;"
+						>
 							↺ Pulihkan Draft Sebelumnya
 						</button>
 					</div>
@@ -53,7 +62,8 @@ const existingPosts = rawPosts.map((p) => ({
 				<div class="form-column">
 					<form id="post-editor-form" class="editor-form glass-card">
 						<div class="form-group">
-							<label for="post-title">Judul Artikel (Title)</label>
+							<label for="post-title">Judul Artikel (Title)</label
+							>
 							<input
 								type="text"
 								id="post-title"
@@ -76,28 +86,57 @@ const existingPosts = rawPosts.map((p) => ({
 
 						<div class="form-row">
 							<div class="form-group">
-								<label for="post-category">Kategori Cluster</label>
-								<select id="post-category" class="input-field select-field">
-									{categories.map((c) => (
-										<option value={c.id}>{c.name}</option>
-									))}
+								<label for="post-category"
+									>Kategori Cluster</label
+								>
+								<select
+									id="post-category"
+									class="input-field select-field"
+								>
+									{
+										categories.map((c) => (
+											<option value={c.id}>
+												{c.name}
+											</option>
+										))
+									}
 								</select>
 							</div>
 
 							<div class="form-group">
-								<label for="post-status">Status Publikasi</label>
-								<select id="post-status" class="input-field select-field">
-									<option value="PUBLISHED">PUBLISHED (Langsung Tayang)</option>
-									<option value="DRAFT">DRAFT (Simpan Draft)</option>
-									<option value="SCHEDULED">SCHEDULED (Jadwalkan)</option>
+								<label for="post-status">Status Publikasi</label
+								>
+								<select
+									id="post-status"
+									class="input-field select-field"
+								>
+									<option value="PUBLISHED"
+										>PUBLISHED (Langsung Tayang)</option
+									>
+									<option value="DRAFT"
+										>DRAFT (Simpan Draft)</option
+									>
+									<option value="SCHEDULED"
+										>SCHEDULED (Jadwalkan)</option
+									>
 								</select>
 							</div>
 						</div>
 
 						<!-- Scheduled Date Group (Shown when SCHEDULED) -->
-						<div class="form-group" id="scheduled-group" style="display: none;">
-							<label for="post-scheduled-at">Waktu Tayang Terjadwal</label>
-							<input type="datetime-local" id="post-scheduled-at" class="input-field" />
+						<div
+							class="form-group"
+							id="scheduled-group"
+							style="display: none;"
+						>
+							<label for="post-scheduled-at"
+								>Waktu Tayang Terjadwal</label
+							>
+							<input
+								type="datetime-local"
+								id="post-scheduled-at"
+								class="input-field"
+							/>
 						</div>
 
 						<!-- Featured Post Checkbox -->
@@ -105,14 +144,20 @@ const existingPosts = rawPosts.map((p) => ({
 							<label class="checkbox-container">
 								<input type="checkbox" id="post-featured" />
 								<span class="checkbox-custom"></span>
-								<span class="checkbox-label">Tandai sebagai <strong>Featured Article</strong> (Tampil di kartu sorotan utama)</span>
+								<span class="checkbox-label"
+									>Tandai sebagai <strong
+										>Featured Article</strong
+									> (Tampil di kartu sorotan utama)</span
+								>
 							</label>
 						</div>
 
 						<!-- SEO Focus Keyword & Search Intent (PRD Section 3) -->
 						<div class="form-row">
 							<div class="form-group">
-								<label for="post-keyword">Focus Keyword (Target Utama)</label>
+								<label for="post-keyword"
+									>Focus Keyword (Target Utama)</label
+								>
 								<input
 									type="text"
 									id="post-keyword"
@@ -123,65 +168,112 @@ const existingPosts = rawPosts.map((p) => ({
 
 							<div class="form-group">
 								<label for="post-intent">Search Intent</label>
-								<select id="post-intent" class="input-field select-field">
-									<option value="Informational">Informational (Tutorial & Konsep)</option>
-									<option value="Commercial">Commercial (Komparasi & Evaluasi)</option>
-									<option value="Transactional">Transactional (Download & Tools)</option>
-									<option value="Navigational">Navigational (Brand & Reference)</option>
+								<select
+									id="post-intent"
+									class="input-field select-field"
+								>
+									<option value="Informational"
+										>Informational (Tutorial & Konsep)</option
+									>
+									<option value="Commercial"
+										>Commercial (Komparasi & Evaluasi)</option
+									>
+									<option value="Transactional"
+										>Transactional (Download & Tools)</option
+									>
+									<option value="Navigational"
+										>Navigational (Brand & Reference)</option
+									>
 								</select>
 							</div>
 						</div>
 
 						<div class="form-group">
-							<label for="post-excerpt">Excerpt / Meta Description</label>
+							<label for="post-excerpt"
+								>Excerpt / Meta Description</label
+							>
 							<textarea
 								id="post-excerpt"
 								rows="3"
 								placeholder="Deskripsi singkat yang memikat untuk snippet hasil pencarian Google..."
 								required
-								class="input-field"
-							></textarea>
+								class="input-field"></textarea>
 						</div>
 
 						<!-- Content Tabs: Markdown Editor vs Live Preview -->
 						<div class="content-header-row">
 							<label>Konten Artikel</label>
 							<div class="editor-tabs">
-								<button type="button" class="tab-btn active" id="tab-write">Tulis Markdown</button>
-								<button type="button" class="tab-btn" id="tab-preview">Live Preview</button>
+								<button
+									type="button"
+									class="tab-btn active"
+									id="tab-write">Tulis Markdown</button
+								>
+								<button
+									type="button"
+									class="tab-btn"
+									id="tab-preview">Live Preview</button
+								>
 							</div>
 						</div>
 
 						<div id="write-container">
 							<textarea
 								id="post-content"
-								rows="16"
-								placeholder="# Tulis artikel Anda di sini menggunakan Markdown...&#10;&#10;Gunakan heading, code block, dan tautan internal."
+								rows="24"
+								placeholder="# Tulis artikel Anda di sini menggunakan Markdown...
+
+Gunakan heading, code block, dan tautan internal."
 								required
-								class="input-field content-textarea"
-							></textarea>
+								class="input-field content-textarea"></textarea>
 						</div>
 
-						<div id="preview-container" class="preview-box" style="display: none;">
-							<div id="preview-content" class="preview-content"></div>
+						<div
+							id="preview-container"
+							class="preview-box"
+							style="display: none;"
+						>
+							<div id="preview-content" class="preview-content">
+							</div>
 						</div>
 
 						<!-- Advanced SEO Collapsible (Canonical & OG Image) -->
 						<details class="advanced-seo-details">
-							<summary class="advanced-seo-summary">⚙️ Pengaturan SEO Lanjutan (Canonical URL & OG Image)</summary>
+							<summary class="advanced-seo-summary"
+								>⚙️ Pengaturan SEO Lanjutan (Canonical URL & OG
+								Image)</summary
+							>
 							<div class="form-row" style="margin-top: 1rem;">
 								<div class="form-group">
-									<label for="post-canonical">Canonical URL (Opsional)</label>
-									<input type="url" id="post-canonical" placeholder="https://qblog.qwarts.my.id/blog/..." class="input-field mono-field" />
+									<label for="post-canonical"
+										>Canonical URL (Opsional)</label
+									>
+									<input
+										type="url"
+										id="post-canonical"
+										placeholder="https://qblog.qwarts.my.id/blog/..."
+										class="input-field mono-field"
+									/>
 								</div>
 								<div class="form-group">
-									<label for="post-og-image">OG Image URL (Banner Share Sosial)</label>
-									<input type="text" id="post-og-image" placeholder="/blog-placeholder-1.jpg" class="input-field" />
+									<label for="post-og-image"
+										>OG Image URL (Banner Share Sosial)</label
+									>
+									<input
+										type="text"
+										id="post-og-image"
+										placeholder="/blog-placeholder-1.jpg"
+										class="input-field"
+									/>
 								</div>
 							</div>
 						</details>
 
-						<button type="submit" class="btn btn-primary submit-btn" id="save-post-btn">
+						<button
+							type="submit"
+							class="btn btn-primary submit-btn"
+							id="save-post-btn"
+						>
 							Simpan & Publikasikan ke Cloudflare D1
 						</button>
 
@@ -197,11 +289,15 @@ const existingPosts = rawPosts.map((p) => ({
 							<span class="score-text">SEO SCORE</span>
 						</div>
 
-						<h3 class="checklist-title">Realtime SEO Health Checklist</h3>
+						<h3 class="checklist-title">
+							Realtime SEO Health Checklist
+						</h3>
 						<div class="checklist-items">
 							<div class="check-item" id="chk-title">
 								<span class="chk-icon">○</span>
-								<span>Panjang judul optimal (35-75 karakter)</span>
+								<span
+									>Panjang judul optimal (35-75 karakter)</span
+								>
 							</div>
 							<div class="check-item" id="chk-slug">
 								<span class="chk-icon">○</span>
@@ -209,11 +305,14 @@ const existingPosts = rawPosts.map((p) => ({
 							</div>
 							<div class="check-item" id="chk-keyword">
 								<span class="chk-icon">○</span>
-								<span>Focus keyword ada di Judul & Excerpt</span>
+								<span>Focus keyword ada di Judul & Excerpt</span
+								>
 							</div>
 							<div class="check-item" id="chk-desc">
 								<span class="chk-icon">○</span>
-								<span>Meta description memadai (70-180 karakter)</span>
+								<span
+									>Meta description memadai (70-180 karakter)</span
+								>
 							</div>
 							<div class="check-item" id="chk-h1">
 								<span class="chk-icon">○</span>
@@ -230,7 +329,8 @@ const existingPosts = rawPosts.map((p) => ({
 						</div>
 
 						<div class="seo-hints-box" id="seo-hints">
-							<strong>Saran:</strong> Mulai ketik judul, focus keyword, dan konten untuk melihat skor SEO Anda.
+							<strong>Saran:</strong> Mulai ketik judul, focus keyword,
+							dan konten untuk melihat skor SEO Anda.
 						</div>
 					</div>
 
@@ -239,89 +339,133 @@ const existingPosts = rawPosts.map((p) => ({
 						<div class="link-panel-header">
 							<div class="link-title-group">
 								<span class="panel-icon">🔗</span>
-								<h3 class="link-panel-title">Smart Link Suggestions</h3>
+								<h3 class="link-panel-title">
+									Smart Link Suggestions
+								</h3>
 							</div>
 							<span class="pill pill-cyan">Intelligence</span>
 						</div>
 						<p class="link-panel-desc">
-							Rekomendasi tautan internal cerdas berdasarkan konteks tulisan untuk memperkuat Topic Clustering & SEO authority.
+							Rekomendasi tautan internal cerdas berdasarkan
+							konteks tulisan untuk memperkuat Topic Clustering &
+							SEO authority.
 						</p>
 
-						<div id="link-suggestions-list" class="suggestions-list">
-							<p class="empty-suggestions">Ketik konten artikel untuk mendapatkan rekomendasi tautan internal...</p>
+						<div
+							id="link-suggestions-list"
+							class="suggestions-list"
+						>
+							<p class="empty-suggestions">
+								Ketik konten artikel untuk mendapatkan
+								rekomendasi tautan internal...
+							</p>
 						</div>
 					</div>
 
 					<!-- Hidden payload of existing articles for instant client matching -->
-					<script id="existing-posts-data" type="application/json" set:html={JSON.stringify(existingPosts)} />
+					<script
+						id="existing-posts-data"
+						type="application/json"
+						set:html={JSON.stringify(existingPosts)}
+					/>
 				</div>
 			</div>
 		</div>
 
 		<script>
-			const titleInput = document.getElementById('post-title') as HTMLInputElement | null;
-			const slugInput = document.getElementById('post-slug') as HTMLInputElement | null;
-			const excerptInput = document.getElementById('post-excerpt') as HTMLTextAreaElement | null;
-			const contentInput = document.getElementById('post-content') as HTMLTextAreaElement | null;
-			const categorySelect = document.getElementById('post-category') as HTMLSelectElement | null;
-			const statusSelect = document.getElementById('post-status') as HTMLSelectElement | null;
-			const keywordInput = document.getElementById('post-keyword') as HTMLInputElement | null;
-			const intentSelect = document.getElementById('post-intent') as HTMLSelectElement | null;
-			const scheduledGroup = document.getElementById('scheduled-group');
-			const scheduledInput = document.getElementById('post-scheduled-at') as HTMLInputElement | null;
-			const featuredInput = document.getElementById('post-featured') as HTMLInputElement | null;
-			const canonicalInput = document.getElementById('post-canonical') as HTMLInputElement | null;
-			const ogImageInput = document.getElementById('post-og-image') as HTMLInputElement | null;
+			const titleInput = document.getElementById(
+				"post-title",
+			) as HTMLInputElement | null;
+			const slugInput = document.getElementById(
+				"post-slug",
+			) as HTMLInputElement | null;
+			const excerptInput = document.getElementById(
+				"post-excerpt",
+			) as HTMLTextAreaElement | null;
+			const contentInput = document.getElementById(
+				"post-content",
+			) as HTMLTextAreaElement | null;
+			const categorySelect = document.getElementById(
+				"post-category",
+			) as HTMLSelectElement | null;
+			const statusSelect = document.getElementById(
+				"post-status",
+			) as HTMLSelectElement | null;
+			const keywordInput = document.getElementById(
+				"post-keyword",
+			) as HTMLInputElement | null;
+			const intentSelect = document.getElementById(
+				"post-intent",
+			) as HTMLSelectElement | null;
+			const scheduledGroup = document.getElementById("scheduled-group");
+			const scheduledInput = document.getElementById(
+				"post-scheduled-at",
+			) as HTMLInputElement | null;
+			const featuredInput = document.getElementById(
+				"post-featured",
+			) as HTMLInputElement | null;
+			const canonicalInput = document.getElementById(
+				"post-canonical",
+			) as HTMLInputElement | null;
+			const ogImageInput = document.getElementById(
+				"post-og-image",
+			) as HTMLInputElement | null;
 
-			const tabWrite = document.getElementById('tab-write');
-			const tabPreview = document.getElementById('tab-preview');
-			const writeContainer = document.getElementById('write-container');
-			const previewContainer = document.getElementById('preview-container');
-			const previewContent = document.getElementById('preview-content');
+			const tabWrite = document.getElementById("tab-write");
+			const tabPreview = document.getElementById("tab-preview");
+			const writeContainer = document.getElementById("write-container");
+			const previewContainer =
+				document.getElementById("preview-container");
+			const previewContent = document.getElementById("preview-content");
 
-			const autosaveTime = document.getElementById('autosave-time');
-			const btnRestoreDraft = document.getElementById('btn-restore-draft');
+			const autosaveTime = document.getElementById("autosave-time");
+			const btnRestoreDraft =
+				document.getElementById("btn-restore-draft");
 
-			const scoreVal = document.getElementById('score-val');
-			const scoreCircle = document.getElementById('score-circle');
-			const hintsBox = document.getElementById('seo-hints');
+			const scoreVal = document.getElementById("score-val");
+			const scoreCircle = document.getElementById("score-circle");
+			const hintsBox = document.getElementById("seo-hints");
 
-			const chkTitle = document.getElementById('chk-title');
-			const chkSlug = document.getElementById('chk-slug');
-			const chkKeyword = document.getElementById('chk-keyword');
-			const chkDesc = document.getElementById('chk-desc');
-			const chkH1 = document.getElementById('chk-h1');
-			const chkWords = document.getElementById('chk-words');
-			const chkLinks = document.getElementById('chk-links');
+			const chkTitle = document.getElementById("chk-title");
+			const chkSlug = document.getElementById("chk-slug");
+			const chkKeyword = document.getElementById("chk-keyword");
+			const chkDesc = document.getElementById("chk-desc");
+			const chkH1 = document.getElementById("chk-h1");
+			const chkWords = document.getElementById("chk-words");
+			const chkLinks = document.getElementById("chk-links");
 
 			// Toggle scheduled date input
 			if (statusSelect && scheduledGroup) {
-				statusSelect.addEventListener('change', () => {
-					scheduledGroup.style.display = statusSelect.value === 'SCHEDULED' ? 'block' : 'none';
+				statusSelect.addEventListener("change", () => {
+					scheduledGroup.style.display =
+						statusSelect.value === "SCHEDULED" ? "block" : "none";
 				});
 			}
 
 			// Auto slug generator from title
 			if (titleInput && slugInput) {
-				titleInput.addEventListener('input', () => {
+				titleInput.addEventListener("input", () => {
 					if (!slugInput.dataset.manual) {
 						slugInput.value = titleInput.value
 							.toLowerCase()
-							.replace(/[^a-z0-9]+/g, '-')
-							.replace(/(^-|-$)+/g, '');
+							.replace(/[^a-z0-9]+/g, "-")
+							.replace(/(^-|-$)+/g, "");
 					}
 					triggerUpdate();
 				});
 
-				slugInput.addEventListener('input', () => {
-					slugInput.dataset.manual = 'true';
+				slugInput.addEventListener("input", () => {
+					slugInput.dataset.manual = "true";
 					triggerUpdate();
 				});
 			}
 
-			if (excerptInput) excerptInput.addEventListener('input', triggerUpdate);
-			if (contentInput) contentInput.addEventListener('input', triggerUpdate);
-			if (keywordInput) keywordInput.addEventListener('input', triggerUpdate);
+			if (excerptInput)
+				excerptInput.addEventListener("input", triggerUpdate);
+			if (contentInput)
+				contentInput.addEventListener("input", triggerUpdate);
+			if (keywordInput)
+				keywordInput.addEventListener("input", triggerUpdate);
 
 			function triggerUpdate() {
 				updateSeoScore();
@@ -329,19 +473,25 @@ const existingPosts = rawPosts.map((p) => ({
 			}
 
 			// Tab switcher (Write vs Live Preview)
-			if (tabWrite && tabPreview && writeContainer && previewContainer && previewContent) {
-				tabWrite.addEventListener('click', () => {
-					tabWrite.classList.add('active');
-					tabPreview.classList.remove('active');
-					writeContainer.style.display = 'block';
-					previewContainer.style.display = 'none';
+			if (
+				tabWrite &&
+				tabPreview &&
+				writeContainer &&
+				previewContainer &&
+				previewContent
+			) {
+				tabWrite.addEventListener("click", () => {
+					tabWrite.classList.add("active");
+					tabPreview.classList.remove("active");
+					writeContainer.style.display = "block";
+					previewContainer.style.display = "none";
 				});
 
-				tabPreview.addEventListener('click', () => {
-					tabPreview.classList.add('active');
-					tabWrite.classList.remove('active');
-					writeContainer.style.display = 'none';
-					previewContainer.style.display = 'block';
+				tabPreview.addEventListener("click", () => {
+					tabPreview.classList.add("active");
+					tabWrite.classList.remove("active");
+					writeContainer.style.display = "none";
+					previewContainer.style.display = "block";
 					renderPreview();
 				});
 			}
@@ -354,18 +504,26 @@ const existingPosts = rawPosts.map((p) => ({
 
 			function parseMarkdownSimple(md: string): string {
 				let html = md
-					.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-					.replace(/^### (.*$)/gim, '<h3>$1</h3>')
-					.replace(/^## (.*$)/gim, '<h2>$1</h2>')
-					.replace(/^# (.*$)/gim, '<h1>$1</h1>')
-					.replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
-					.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-					.replace(/\*(.*)\*/gim, '<em>$1</em>')
-					.replace(/!\[(.*?)\]\((.*?)\)/gim, '<img alt="$1" src="$2" class="preview-img" />')
-					.replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" target="_blank">$1</a>')
-					.replace(/`([^`]+)`/gim, '<code>$1</code>')
-					.replace(/\n\n/gim, '</p><p>')
-					.replace(/\n/gim, '<br/>');
+					.replace(/&/g, "&amp;")
+					.replace(/</g, "&lt;")
+					.replace(/>/g, "&gt;")
+					.replace(/^### (.*$)/gim, "<h3>$1</h3>")
+					.replace(/^## (.*$)/gim, "<h2>$1</h2>")
+					.replace(/^# (.*$)/gim, "<h1>$1</h1>")
+					.replace(/^\> (.*$)/gim, "<blockquote>$1</blockquote>")
+					.replace(/\*\*(.*)\*\*/gim, "<strong>$1</strong>")
+					.replace(/\*(.*)\*/gim, "<em>$1</em>")
+					.replace(
+						/!\[(.*?)\]\((.*?)\)/gim,
+						'<img alt="$1" src="$2" class="preview-img" />',
+					)
+					.replace(
+						/\[(.*?)\]\((.*?)\)/gim,
+						'<a href="$2" target="_blank">$1</a>',
+					)
+					.replace(/`([^`]+)`/gim, "<code>$1</code>")
+					.replace(/\n\n/gim, "</p><p>")
+					.replace(/\n/gim, "<br/>");
 				return `<p>${html}</p>`;
 			}
 
@@ -375,17 +533,23 @@ const existingPosts = rawPosts.map((p) => ({
 				if (autosaveTimer) clearTimeout(autosaveTimer);
 				autosaveTimer = setTimeout(() => {
 					const draft = {
-						title: titleInput?.value || '',
-						slug: slugInput?.value || '',
-						excerpt: excerptInput?.value || '',
-						content: contentInput?.value || '',
-						keyword: keywordInput?.value || '',
+						title: titleInput?.value || "",
+						slug: slugInput?.value || "",
+						excerpt: excerptInput?.value || "",
+						content: contentInput?.value || "",
+						keyword: keywordInput?.value || "",
 						timestamp: Date.now(),
 					};
 					if (draft.title || draft.content) {
-						localStorage.setItem('qblog_draft', JSON.stringify(draft));
+						localStorage.setItem(
+							"qblog_draft",
+							JSON.stringify(draft),
+						);
 						if (autosaveTime) {
-							const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+							const timeStr = new Date().toLocaleTimeString(
+								"id-ID",
+								{ hour: "2-digit", minute: "2-digit" },
+							);
 							autosaveTime.textContent = `● Tersimpan lokal (${timeStr})`;
 						}
 					}
@@ -393,19 +557,23 @@ const existingPosts = rawPosts.map((p) => ({
 			}
 
 			// Check existing draft on load
-			window.addEventListener('DOMContentLoaded', () => {
-				const saved = localStorage.getItem('qblog_draft');
+			window.addEventListener("DOMContentLoaded", () => {
+				const saved = localStorage.getItem("qblog_draft");
 				if (saved && btnRestoreDraft) {
 					const parsed = JSON.parse(saved);
 					if (parsed.title || parsed.content) {
-						btnRestoreDraft.style.display = 'inline-block';
-						btnRestoreDraft.addEventListener('click', () => {
-							if (titleInput) titleInput.value = parsed.title || '';
-							if (slugInput) slugInput.value = parsed.slug || '';
-							if (excerptInput) excerptInput.value = parsed.excerpt || '';
-							if (contentInput) contentInput.value = parsed.content || '';
-							if (keywordInput) keywordInput.value = parsed.keyword || '';
-							btnRestoreDraft.style.display = 'none';
+						btnRestoreDraft.style.display = "inline-block";
+						btnRestoreDraft.addEventListener("click", () => {
+							if (titleInput)
+								titleInput.value = parsed.title || "";
+							if (slugInput) slugInput.value = parsed.slug || "";
+							if (excerptInput)
+								excerptInput.value = parsed.excerpt || "";
+							if (contentInput)
+								contentInput.value = parsed.content || "";
+							if (keywordInput)
+								keywordInput.value = parsed.keyword || "";
+							btnRestoreDraft.style.display = "none";
 							updateSeoScore();
 						});
 					}
@@ -414,11 +582,11 @@ const existingPosts = rawPosts.map((p) => ({
 			});
 
 			function updateSeoScore() {
-				const title = titleInput?.value || '';
-				const slug = slugInput?.value || '';
-				const desc = excerptInput?.value || '';
-				const content = contentInput?.value || '';
-				const kw = (keywordInput?.value || '').trim().toLowerCase();
+				const title = titleInput?.value || "";
+				const slug = slugInput?.value || "";
+				const desc = excerptInput?.value || "";
+				const content = contentInput?.value || "";
+				const kw = (keywordInput?.value || "").trim().toLowerCase();
 
 				let score = 0;
 				const hints: string[] = [];
@@ -429,7 +597,10 @@ const existingPosts = rawPosts.map((p) => ({
 					setCheck(chkTitle, true);
 				} else {
 					setCheck(chkTitle, false);
-					if (title.length < 35) hints.push('Judul terlalu pendek (ideal 40-70 karakter).');
+					if (title.length < 35)
+						hints.push(
+							"Judul terlalu pendek (ideal 40-70 karakter).",
+						);
 				}
 
 				// 2. Slug
@@ -447,9 +618,11 @@ const existingPosts = rawPosts.map((p) => ({
 				} else {
 					setCheck(chkKeyword, false);
 					if (kw.length > 2) {
-						hints.push(`Sertakan focus keyword "${kw}" di dalam judul.`);
+						hints.push(
+							`Sertakan focus keyword "${kw}" di dalam judul.`,
+						);
 					} else {
-						hints.push('Tentukan Focus Keyword untuk artikel ini.');
+						hints.push("Tentukan Focus Keyword untuk artikel ini.");
 					}
 				}
 
@@ -459,7 +632,10 @@ const existingPosts = rawPosts.map((p) => ({
 					setCheck(chkDesc, true);
 				} else {
 					setCheck(chkDesc, false);
-					if (desc.length < 70) hints.push('Meta description terlalu pendek (80-160 karakter).');
+					if (desc.length < 70)
+						hints.push(
+							"Meta description terlalu pendek (80-160 karakter).",
+						);
 				}
 
 				// 5. H1
@@ -468,17 +644,22 @@ const existingPosts = rawPosts.map((p) => ({
 					setCheck(chkH1, true);
 				} else {
 					setCheck(chkH1, false);
-					hints.push('Tambahkan heading # H1 di dalam konten.');
+					hints.push("Tambahkan heading # H1 di dalam konten.");
 				}
 
 				// 6. Words
-				const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+				const wordCount = content
+					.trim()
+					.split(/\s+/)
+					.filter(Boolean).length;
 				if (wordCount >= 150) {
 					score += 15;
 					setCheck(chkWords, true);
 				} else {
 					setCheck(chkWords, false);
-					hints.push(`Jumlah kata: ${wordCount}. Target minimal: 150 kata.`);
+					hints.push(
+						`Jumlah kata: ${wordCount}. Target minimal: 150 kata.`,
+					);
 				}
 
 				// 7. Links
@@ -487,17 +668,25 @@ const existingPosts = rawPosts.map((p) => ({
 					setCheck(chkLinks, true);
 				} else {
 					setCheck(chkLinks, false);
-					hints.push('Tambahkan setidaknya 1 internal link kontekstual.');
+					hints.push(
+						"Tambahkan setidaknya 1 internal link kontekstual.",
+					);
 				}
 
 				if (scoreVal) scoreVal.textContent = String(score);
 				if (scoreCircle) {
-					scoreCircle.style.borderColor = score >= 80 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+					scoreCircle.style.borderColor =
+						score >= 80
+							? "#10b981"
+							: score >= 50
+								? "#f59e0b"
+								: "#ef4444";
 				}
 
 				if (hintsBox) {
 					hintsBox.innerHTML = hints.length
-						? '<strong>Rekomendasi SEO:</strong><br/>• ' + hints.join('<br/>• ')
+						? "<strong>Rekomendasi SEO:</strong><br/>• " +
+							hints.join("<br/>• ")
 						: '<strong style="color: #34d399;">✓ Seluruh kriteria SEO terpenuhi dengan baik!</strong>';
 				}
 
@@ -506,59 +695,88 @@ const existingPosts = rawPosts.map((p) => ({
 
 			function setCheck(el: HTMLElement | null, pass: boolean) {
 				if (!el) return;
-				const icon = el.querySelector('.chk-icon');
+				const icon = el.querySelector(".chk-icon");
 				if (icon) {
-					icon.textContent = pass ? '✓' : '○';
-					(icon as HTMLElement).style.color = pass ? '#10b981' : 'var(--text-muted)';
+					icon.textContent = pass ? "✓" : "○";
+					(icon as HTMLElement).style.color = pass
+						? "#10b981"
+						: "var(--text-muted)";
 				}
-				el.style.color = pass ? '#ffffff' : 'var(--text-secondary)';
+				el.style.color = pass ? "#ffffff" : "var(--text-secondary)";
 			}
 
 			// --- Smart Internal Linking Engine (Client-side) ---
-			const rawPostsJson = document.getElementById('existing-posts-data')?.textContent;
-			const candidatePosts: Array<{ title: string; slug: string; category: string; tags: string[] }> =
-				rawPostsJson ? JSON.parse(rawPostsJson) : [];
-			const suggestionsList = document.getElementById('link-suggestions-list');
+			const rawPostsJson = document.getElementById(
+				"existing-posts-data",
+			)?.textContent;
+			const candidatePosts: Array<{
+				title: string;
+				slug: string;
+				category: string;
+				tags: string[];
+			}> = rawPostsJson ? JSON.parse(rawPostsJson) : [];
+			const suggestionsList = document.getElementById(
+				"link-suggestions-list",
+			);
 
 			function updateSmartSuggestions() {
 				if (!suggestionsList || candidatePosts.length === 0) return;
-				const content = (contentInput?.value || '').toLowerCase();
-				const title = (titleInput?.value || '').toLowerCase();
+				const content = (contentInput?.value || "").toLowerCase();
+				const title = (titleInput?.value || "").toLowerCase();
 				const combined = `${title} ${content}`;
 
 				if (combined.trim().length < 15) {
-					suggestionsList.innerHTML = '<p class="empty-suggestions">Ketik lebih banyak konten untuk melihat saran internal links...</p>';
+					suggestionsList.innerHTML =
+						'<p class="empty-suggestions">Ketik lebih banyak konten untuk melihat saran internal links...</p>';
 					return;
 				}
 
-				const matches: Array<{ post: typeof candidatePosts[0]; matchedBy: string; isLinked: boolean; score: number }> = [];
+				const matches: Array<{
+					post: (typeof candidatePosts)[0];
+					matchedBy: string;
+					isLinked: boolean;
+					score: number;
+				}> = [];
 
 				candidatePosts.forEach((p) => {
-					const isLinked = content.includes(`/blog/${p.slug}`) || content.includes(p.slug);
+					const isLinked =
+						content.includes(`/blog/${p.slug}`) ||
+						content.includes(p.slug);
 					let score = 0;
-					let matchReason = '';
+					let matchReason = "";
 
 					if (combined.includes(p.title.toLowerCase())) {
 						score += 50;
-						matchReason = 'Judul artikel cocok persis';
+						matchReason = "Judul artikel cocok persis";
 					} else {
-						const words = p.title.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
-						const matchedWords = words.filter((w) => combined.includes(w));
+						const words = p.title
+							.toLowerCase()
+							.split(/\s+/)
+							.filter((w) => w.length > 3);
+						const matchedWords = words.filter((w) =>
+							combined.includes(w),
+						);
 						if (matchedWords.length >= 2) {
 							score += matchedWords.length * 12;
-							matchReason = `Keyword: "${matchedWords.slice(0, 2).join(', ')}"`;
+							matchReason = `Keyword: "${matchedWords.slice(0, 2).join(", ")}"`;
 						}
 					}
 
 					(p.tags || []).forEach((tag) => {
 						if (tag && combined.includes(tag.toLowerCase())) {
 							score += 20;
-							if (!matchReason) matchReason = `Topik tag: "${tag}"`;
+							if (!matchReason)
+								matchReason = `Topik tag: "${tag}"`;
 						}
 					});
 
 					if (score > 0) {
-						matches.push({ post: p, matchedBy: matchReason || 'Topik relevan', isLinked, score });
+						matches.push({
+							post: p,
+							matchedBy: matchReason || "Topik relevan",
+							isLinked,
+							score,
+						});
 					}
 				});
 
@@ -566,7 +784,8 @@ const existingPosts = rawPosts.map((p) => ({
 				const topMatches = matches.slice(0, 4);
 
 				if (topMatches.length === 0) {
-					suggestionsList.innerHTML = '<p class="empty-suggestions">Belum ada artikel relevan yang cocok dengan topik ini.</p>';
+					suggestionsList.innerHTML =
+						'<p class="empty-suggestions">Belum ada artikel relevan yang cocok dengan topik ini.</p>';
 					return;
 				}
 
@@ -587,27 +806,35 @@ const existingPosts = rawPosts.map((p) => ({
 							<span class="suggestion-cat">${m.post.category}</span>
 						</div>
 					</div>
-				`
+				`,
 					)
-					.join('');
+					.join("");
 
-				suggestionsList.querySelectorAll('.btn-insert-link').forEach((btn) => {
-					btn.addEventListener('click', () => {
-						const linkTitle = btn.getAttribute('data-title') || '';
-						const linkSlug = btn.getAttribute('data-slug') || '';
-						insertInternalLink(linkTitle, linkSlug);
+				suggestionsList
+					.querySelectorAll(".btn-insert-link")
+					.forEach((btn) => {
+						btn.addEventListener("click", () => {
+							const linkTitle =
+								btn.getAttribute("data-title") || "";
+							const linkSlug =
+								btn.getAttribute("data-slug") || "";
+							insertInternalLink(linkTitle, linkSlug);
+						});
 					});
-				});
 			}
 
 			function escapeHtml(str: string) {
-				return str.replace(/[&<>"']/g, (m) => ({
-					'&': '&amp;',
-					'<': '&lt;',
-					'>': '&gt;',
-					'"': '&quot;',
-					"'": '&#39;',
-				}[m] || m));
+				return str.replace(
+					/[&<>"']/g,
+					(m) =>
+						({
+							"&": "&amp;",
+							"<": "&lt;",
+							">": "&gt;",
+							'"': "&quot;",
+							"'": "&#39;",
+						})[m] || m,
+				);
 			}
 
 			function insertInternalLink(title: string, slug: string) {
@@ -619,9 +846,15 @@ const existingPosts = rawPosts.map((p) => ({
 
 				if (start !== undefined && end !== undefined && start !== end) {
 					const selected = text.substring(start, end);
-					contentInput.value = text.substring(0, start) + `[${selected}](/blog/${slug})` + text.substring(end);
+					contentInput.value =
+						text.substring(0, start) +
+						`[${selected}](/blog/${slug})` +
+						text.substring(end);
 				} else if (start !== undefined) {
-					contentInput.value = text.substring(0, start) + linkMd + text.substring(start);
+					contentInput.value =
+						text.substring(0, start) +
+						linkMd +
+						text.substring(start);
 				} else {
 					contentInput.value += `\n${linkMd}\n`;
 				}
@@ -631,16 +864,21 @@ const existingPosts = rawPosts.map((p) => ({
 			}
 
 			// Form submission
-			const form = document.getElementById('post-editor-form') as HTMLFormElement | null;
-			const submitBtn = document.getElementById('save-post-btn') as HTMLButtonElement | null;
-			const statusEl = document.getElementById('save-status');
+			const form = document.getElementById(
+				"post-editor-form",
+			) as HTMLFormElement | null;
+			const submitBtn = document.getElementById(
+				"save-post-btn",
+			) as HTMLButtonElement | null;
+			const statusEl = document.getElementById("save-status");
 
 			if (form && submitBtn && statusEl) {
-				form.addEventListener('submit', async (e) => {
+				form.addEventListener("submit", async (e) => {
 					e.preventDefault();
 					submitBtn.disabled = true;
-					statusEl.textContent = 'Menyimpan artikel ke Cloudflare D1...';
-					statusEl.className = 'status-msg info';
+					statusEl.textContent =
+						"Menyimpan artikel ke Cloudflare D1...";
+					statusEl.className = "status-msg info";
 
 					const payload = {
 						title: titleInput?.value.trim(),
@@ -648,39 +886,42 @@ const existingPosts = rawPosts.map((p) => ({
 						excerpt: excerptInput?.value.trim(),
 						content: contentInput?.value.trim(),
 						category_id: categorySelect?.value,
-						status: statusSelect?.value || 'PUBLISHED',
+						status: statusSelect?.value || "PUBLISHED",
 						scheduled_at: scheduledInput?.value || null,
 						featured: Boolean(featuredInput?.checked),
 						focus_keyword: keywordInput?.value.trim() || null,
-						search_intent: intentSelect?.value || 'Informational',
+						search_intent: intentSelect?.value || "Informational",
 						canonical_url: canonicalInput?.value.trim() || null,
 						og_image: ogImageInput?.value.trim() || null,
 						seo_score: Number(scoreVal?.textContent || 85),
 					};
 
 					try {
-						const res = await fetch('/admin/api/posts', {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
+						const res = await fetch("/admin/api/posts", {
+							method: "POST",
+							headers: { "Content-Type": "application/json" },
 							body: JSON.stringify(payload),
 						});
 
 						const data = (await res.json()) as any;
 						if (res.ok && data.success) {
-							localStorage.removeItem('qblog_draft');
-							statusEl.textContent = '✓ Artikel berhasil disimpan ke Cloudflare D1!';
-							statusEl.className = 'status-msg success';
+							localStorage.removeItem("qblog_draft");
+							statusEl.textContent =
+								"✓ Artikel berhasil disimpan ke Cloudflare D1!";
+							statusEl.className = "status-msg success";
 							setTimeout(() => {
-								window.location.href = '/admin/posts';
+								window.location.href = "/admin/posts";
 							}, 1200);
 						} else {
-							statusEl.textContent = '✕ Gagal menyimpan: ' + (data.error || 'Server error');
-							statusEl.className = 'status-msg error';
+							statusEl.textContent =
+								"✕ Gagal menyimpan: " +
+								(data.error || "Server error");
+							statusEl.className = "status-msg error";
 							submitBtn.disabled = false;
 						}
 					} catch (err) {
-						statusEl.textContent = '✕ Terjadi kesalahan koneksi.';
-						statusEl.className = 'status-msg error';
+						statusEl.textContent = "✕ Terjadi kesalahan koneksi.";
+						statusEl.className = "status-msg error";
 						submitBtn.disabled = false;
 					}
 				});
@@ -774,6 +1015,8 @@ const existingPosts = rawPosts.map((p) => ({
 	}
 
 	.input-field {
+		width: 100%;
+		box-sizing: border-box;
 		padding: 0.8rem 1rem;
 		border-radius: var(--radius-sm);
 		background: #0d121f;
@@ -854,22 +1097,38 @@ const existingPosts = rawPosts.map((p) => ({
 		color: #ffffff;
 	}
 
+	#write-container {
+		width: 100%;
+	}
+
+	#post-content,
 	.content-textarea {
+		width: 100%;
+		box-sizing: border-box;
+		min-height: 520px;
+		height: 580px;
 		font-family: "JetBrains Mono", monospace;
-		line-height: 1.6;
+		font-size: 0.95rem;
+		line-height: 1.7;
 		resize: vertical;
+		padding: 1.25rem;
+		border-radius: var(--radius-sm);
 	}
 
 	.preview-box {
+		width: 100%;
+		box-sizing: border-box;
 		padding: 1.5rem;
 		border: 1px solid var(--border-subtle);
 		background: #090d16;
 		border-radius: var(--radius-sm);
-		min-height: 250px;
+		min-height: 520px;
 		line-height: 1.65;
 	}
 
-	.preview-content h1, .preview-content h2, .preview-content h3 {
+	.preview-content h1,
+	.preview-content h2,
+	.preview-content h3 {
 		color: #ffffff;
 		margin-top: 1rem;
 		margin-bottom: 0.5rem;
@@ -916,9 +1175,15 @@ const existingPosts = rawPosts.map((p) => ({
 		margin: 0;
 	}
 
-	.status-msg.success { color: #34d399; }
-	.status-msg.error { color: #f87171; }
-	.status-msg.info { color: #93c5fd; }
+	.status-msg.success {
+		color: #34d399;
+	}
+	.status-msg.error {
+		color: #f87171;
+	}
+	.status-msg.info {
+		color: #93c5fd;
+	}
 
 	/* SEO Panel */
 	.seo-panel {
