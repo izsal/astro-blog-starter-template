@@ -154,7 +154,7 @@ const totalDocs = mediaList.length - totalImages;
 						filename: (document.getElementById('m-filename') as HTMLInputElement).value.trim(),
 						url: (document.getElementById('m-url') as HTMLInputElement).value.trim(),
 						alt_text: (document.getElementById('m-alt') as HTMLInputElement).value.trim(),
-						mime_type: (document.getElementById('m-mime') as HTMLSelectElement).value,
+						mime_type: ((document.getElementById('m-mime') as unknown) as HTMLSelectElement)?.value || 'image/webp',
 						size_bytes: 150000,
 					};
 

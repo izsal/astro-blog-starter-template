@@ -80,7 +80,7 @@ if (verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
 							body: JSON.stringify({ token }),
 						});
 
-						const data = await res.json();
+						const data = (await res.json()) as any;
 						if (res.ok && data.success) {
 							window.location.href = '/admin/dashboard';
 						} else {

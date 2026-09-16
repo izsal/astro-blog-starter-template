@@ -10,11 +10,22 @@ const { slug, initialViews = 0, initialLikes = 0 } = Astro.props;
 
 <div class="d1-stats-wrapper" data-slug={slug}>
 	<div class="stat-bubble" title="Total Views stored in Cloudflare D1">
-		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+		<svg
+			width="16"
+			height="16"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
 			<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
 			<circle cx="12" cy="12" r="3"></circle>
 		</svg>
-		<span class="views-count" id={`views-${slug}`}>{initialViews > 0 ? initialViews : '...'} views</span>
+		<span class="views-count" id={`views-${slug}`}
+			>{initialViews > 0 ? initialViews : "..."} views</span
+		>
 	</div>
 
 	<button
@@ -24,13 +35,28 @@ const { slug, initialViews = 0, initialLikes = 0 } = Astro.props;
 		title="Click to like this article (persisted in Cloudflare D1)"
 		aria-label="Like this article"
 	>
-		<svg class="heart-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-			<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+		<svg
+			class="heart-icon"
+			width="16"
+			height="16"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
+			<path
+				d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
+			></path>
 		</svg>
 		<span class="likes-count" id={`likes-${slug}`}>{initialLikes}</span>
 	</button>
 
-	<span class="d1-pill" title="Connected to Cloudflare D1 SQLite Database (my-binding)">
+	<span
+		class="d1-pill"
+		title="Connected to Cloudflare D1 SQLite Database (my-binding)"
+	>
 		<span class="d1-dot"></span>
 		D1 SQLite
 	</span>
@@ -38,59 +64,78 @@ const { slug, initialViews = 0, initialLikes = 0 } = Astro.props;
 
 <script>
 	function initPostStats() {
-		const wrappers = document.querySelectorAll<HTMLElement>('.d1-stats-wrapper');
+		const wrappers =
+			document.querySelectorAll<HTMLElement>(".d1-stats-wrapper");
 
 		wrappers.forEach(async (wrapper) => {
 			const slug = wrapper.dataset.slug;
 			if (!slug) return;
 
-			const viewsEl = wrapper.querySelector<HTMLElement>(`#views-${slug}`);
-			const likesEl = wrapper.querySelector<HTMLElement>(`#likes-${slug}`);
-			const likeBtn = wrapper.querySelector<HTMLButtonElement>(`#like-btn-${slug}`);
+			const viewsEl = wrapper.querySelector<HTMLElement>(
+				`#views-${slug}`,
+			);
+			const likesEl = wrapper.querySelector<HTMLElement>(
+				`#likes-${slug}`,
+			);
+			const likeBtn = wrapper.querySelector<HTMLButtonElement>(
+				`#like-btn-${slug}`,
+			);
+
+			// interface response data
+			interface ResponseStats {
+				views: number;
+				likes: number;
+			}
 
 			// Track view count increment via D1 API
 			try {
-				const res = await fetch(`/api/views/${encodeURIComponent(slug)}`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ action: 'view' }),
-				});
+				const res = await fetch(
+					`/api/views/${encodeURIComponent(slug)}`,
+					{
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ action: "view" }),
+					},
+				);
 
 				if (res.ok) {
-					const data = await res.json();
-					if (viewsEl && typeof data.views === 'number') {
+					const data: ResponseStats = await res.json();
+					if (viewsEl && typeof data.views === "number") {
 						viewsEl.textContent = `${data.views} views`;
 					}
-					if (likesEl && typeof data.likes === 'number') {
+					if (likesEl && typeof data.likes === "number") {
 						likesEl.textContent = `${data.likes}`;
 					}
 				}
 			} catch (e) {
-				console.warn('Could not update view count:', e);
+				console.warn("Could not update view count:", e);
 			}
 
 			// Handle like interaction
 			if (likeBtn) {
-				likeBtn.addEventListener('click', async () => {
+				likeBtn.addEventListener("click", async () => {
 					if (likeBtn.disabled) return;
 					likeBtn.disabled = true;
 
 					try {
-						const res = await fetch(`/api/views/${encodeURIComponent(slug)}`, {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify({ action: 'like' }),
-						});
+						const res = await fetch(
+							`/api/views/${encodeURIComponent(slug)}`,
+							{
+								method: "POST",
+								headers: { "Content-Type": "application/json" },
+								body: JSON.stringify({ action: "like" }),
+							},
+						);
 
 						if (res.ok) {
-							const data = await res.json();
-							if (likesEl && typeof data.likes === 'number') {
+							const data: ResponseStats = await res.json();
+							if (likesEl && typeof data.likes === "number") {
 								likesEl.textContent = `${data.likes}`;
-								likeBtn.classList.add('liked');
+								likeBtn.classList.add("liked");
 							}
 						}
 					} catch (e) {
-						console.error('Failed to register like:', e);
+						console.error("Failed to register like:", e);
 					} finally {
 						likeBtn.disabled = false;
 					}
@@ -99,8 +144,8 @@ const { slug, initialViews = 0, initialLikes = 0 } = Astro.props;
 		});
 	}
 
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', initPostStats);
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", initPostStats);
 	} else {
 		initPostStats();
 	}

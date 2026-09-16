@@ -103,7 +103,7 @@ const redirects = await getRedirects(db);
 					e.preventDefault();
 					const fromPath = (document.getElementById('r-from') as HTMLInputElement).value.trim();
 					const toPath = (document.getElementById('r-to') as HTMLInputElement).value.trim();
-					const statusCode = Number((document.getElementById('r-code') as HTMLSelectElement).value);
+					const statusCode = Number(((document.getElementById('r-code') as unknown) as HTMLSelectElement)?.value || 301);
 
 					try {
 						const res = await fetch('/admin/api/redirects', {
@@ -111,7 +111,7 @@ const redirects = await getRedirects(db);
 							headers: { 'Content-Type': 'application/json' },
 							body: JSON.stringify({ from_path: fromPath, to_path: toPath, status_code: statusCode }),
 						});
-						const data = await res.json();
+						const data = (await res.json()) as any;
 						if (res.ok && data.success) {
 							msg.textContent = '✓ Aturan redirect berhasil ditambahkan!';
 							msg.className = 'status-msg success';

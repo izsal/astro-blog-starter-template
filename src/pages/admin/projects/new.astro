@@ -2,7 +2,6 @@
 import BaseHead from '../../../components/BaseHead.astro';
 import { SITE_TITLE } from '../../../consts';
 import { verifyAdminSession } from '../../../lib/admin-auth';
-import { getD1Database } from '../../../lib/db';
 
 export const prerender = false;
 
@@ -122,8 +121,8 @@ if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
 						title: titleInput.value.trim(),
 						slug: slugInput.value.trim(),
 						description: (document.getElementById('proj-desc') as HTMLTextAreaElement).value.trim(),
-						category: (document.getElementById('proj-category') as HTMLSelectElement).value,
-						featured: (document.getElementById('proj-featured') as HTMLSelectElement).value === '1',
+						category: ((document.getElementById('proj-category') as unknown) as HTMLSelectElement)?.value || 'Web Development',
+						featured: ((document.getElementById('proj-featured') as unknown) as HTMLSelectElement)?.value === '1',
 						tech_stack: techArr,
 						github_url: (document.getElementById('proj-github') as HTMLInputElement).value.trim() || null,
 						live_url: (document.getElementById('proj-live') as HTMLInputElement).value.trim() || null,
@@ -135,7 +134,7 @@ if (!verifyAdminSession(cookie, Astro.locals.runtime?.env)) {
 							headers: { 'Content-Type': 'application/json' },
 							body: JSON.stringify(payload),
 						});
-						const data = await res.json();
+						const data = (await res.json()) as any;
 						if (res.ok && data.success) {
 							statusMsg.textContent = '✓ Project berhasil disimpan ke D1!';
 							statusMsg.className = 'status-msg success';

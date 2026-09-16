@@ -665,7 +665,7 @@ const existingPosts = rawPosts.map((p) => ({
 							body: JSON.stringify(payload),
 						});
 
-						const data = await res.json();
+						const data = (await res.json()) as any;
 						if (res.ok && data.success) {
 							localStorage.removeItem('qblog_draft');
 							statusEl.textContent = '✓ Artikel berhasil disimpan ke Cloudflare D1!';

@@ -1,22 +1,22 @@
 ---
-import { getCollection, render } from 'astro:content';
-import BlogPost from '../../layouts/BlogPost.astro';
-import { getD1Database } from '../../lib/db';
-import { marked } from 'marked';
+import { getCollection, render } from "astro:content";
+import BlogPost from "../../layouts/BlogPost.astro";
+import { getD1Database } from "../../lib/db";
+import { marked } from "marked";
 
 export const prerender = false;
 
 const { slug } = Astro.params;
 if (!slug) {
-	return Astro.redirect('/404');
+	return Astro.redirect("/404");
 }
 
-const staticPosts = await getCollection('blog');
+const staticPosts = await getCollection("blog");
 const staticPost = staticPosts.find((p) => p.id === slug);
 
 let StaticContent: any = null;
 let postData: any = null;
-let htmlContent = '';
+let htmlContent = "";
 
 if (staticPost) {
 	const rendered = await render(staticPost);
@@ -35,45 +35,57 @@ if (staticPost) {
 	if (db) {
 		try {
 			d1Post = await db
-				.prepare('SELECT * FROM posts WHERE slug = ? AND (is_trashed = 0 OR is_trashed IS NULL)')
+				.prepare(
+					"SELECT * FROM posts WHERE slug = ? AND (is_trashed = 0 OR is_trashed IS NULL)",
+				)
 				.bind(slug)
 				.first();
 		} catch (e) {
-			console.warn('Could not query post by slug from D1:', e);
+			console.warn("Could not query post by slug from D1:", e);
 		}
 	}
 
 	if (!d1Post) {
-		const { getUnifiedPosts } = await import('../../lib/posts');
+		const { getUnifiedPosts } = await import("../../lib/posts");
 		const unified = await getUnifiedPosts(db);
 		const match = unified.find((p) => p.slug === slug && !p.is_trashed);
 		if (match) {
 			d1Post = {
 				title: match.title,
-				excerpt: match.description,
+				excerpt: match.excerpt,
 				content: match.content,
-				published_at: match.pubDate.toISOString(),
-				cover_image: match.coverImage,
+				published_at: match.published_at,
+				cover_image: match.cover_image,
 			};
 		}
 	}
 
 	if (!d1Post) {
-		return Astro.redirect('/404');
+		return Astro.redirect("/404");
 	}
 
 	postData = {
 		title: d1Post.title,
 		description: d1Post.excerpt || d1Post.title,
-		pubDate: d1Post.published_at ? new Date(d1Post.published_at) : new Date(),
-		updatedDate: d1Post.updated_at ? new Date(d1Post.updated_at) : undefined,
-		heroImage: d1Post.cover_image || '/blog-placeholder-1.jpg',
+		pubDate: d1Post.published_at
+			? new Date(d1Post.published_at)
+			: new Date(),
+		updatedDate: d1Post.updated_at
+			? new Date(d1Post.updated_at)
+			: undefined,
+		heroImage: d1Post.cover_image || "/blog-placeholder-1.jpg",
 		slug,
 	};
-	htmlContent = await marked.parse(d1Post.content || '');
+	htmlContent = await marked.parse(d1Post.content || "");
 }
 ---
 
 <BlogPost {...postData}>
-	{StaticContent ? <StaticContent /> : <div class="rendered-markdown-content" set:html={htmlContent} />}
+	{
+		StaticContent ? (
+			<StaticContent />
+		) : (
+			<div class="rendered-markdown-content" set:html={htmlContent} />
+		)
+	}
 </BlogPost>

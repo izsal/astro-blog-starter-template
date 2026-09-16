@@ -15,9 +15,9 @@ import { getSeriesForPost } from '../lib/series';
 import { getUnifiedPosts, getRelatedArticles, calculateReadingTime } from '../lib/posts';
 import { generateArticleJsonLd } from '../lib/seo';
 
-interface Props extends CollectionEntry<'blog'>['data'] {
+type Props = CollectionEntry<'blog'>['data'] & {
 	slug?: string;
-}
+};
 
 const { title, description, pubDate, updatedDate, heroImage, slug = '' } = Astro.props;
 
