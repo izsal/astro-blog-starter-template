@@ -5,6 +5,7 @@ import { verifyAdminSession } from "../../../lib/admin-auth";
 import { getD1Database } from "../../../lib/db";
 import { getCategories } from "../../../lib/categories";
 import { getUnifiedPosts } from "../../../lib/posts";
+import "easymde/dist/easymde.min.css";
 
 export const prerender = false;
 
@@ -30,6 +31,10 @@ const existingPosts = rawPosts.map((p) => ({
 		<BaseHead
 			title={`Tulis Artikel Baru — Admin ${SITE_TITLE}`}
 			description="Editor artikel dengan real-time SEO score checker, live preview, dan autosave."
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
 		/>
 	</head>
 	<body class="admin-body">
@@ -200,40 +205,29 @@ const existingPosts = rawPosts.map((p) => ({
 								class="input-field"></textarea>
 						</div>
 
-						<!-- Content Tabs: Markdown Editor vs Live Preview -->
-						<div class="content-header-row">
-							<label>Konten Artikel</label>
-							<div class="editor-tabs">
-								<button
-									type="button"
-									class="tab-btn active"
-									id="tab-write">Tulis Markdown</button
-								>
-								<button
-									type="button"
-									class="tab-btn"
-									id="tab-preview">Live Preview</button
-								>
+						<div class="form-group">
+							<label for="post-cover-image">
+								Cover Image URL (Opsional)
+								<span class="label-desc">— Biarkan kosong jika tidak ingin menampilkan banner gambar pada artikel.</span>
+							</label>
+							<input
+								type="text"
+								id="post-cover-image"
+								placeholder="Contoh: /images/cover.jpg atau https://... (kosongkan jika tanpa gambar)"
+								class="input-field"
+							/>
+						</div>
+
+						<!-- Content Section: EasyMDE Rich Markdown Editor -->
+						<div class="form-group">
+							<div class="content-header-row">
+								<label for="post-content">Konten Artikel (Rich Markdown Editor)</label>
+								<span class="editor-badge">✨ Markdown + Side-by-side Live Preview</span>
 							</div>
-						</div>
-
-						<div id="write-container">
-							<textarea
-								id="post-content"
-								rows="24"
-								placeholder="# Tulis artikel Anda di sini menggunakan Markdown...
-
-Gunakan heading, code block, dan tautan internal."
-								required
-								class="input-field content-textarea"></textarea>
-						</div>
-
-						<div
-							id="preview-container"
-							class="preview-box"
-							style="display: none;"
-						>
-							<div id="preview-content" class="preview-content">
+							<div class="editor-wrapper">
+								<textarea
+									id="post-content"
+									placeholder="# Tulis artikel Anda di sini menggunakan Markdown..."></textarea>
 							</div>
 						</div>
 
@@ -262,7 +256,7 @@ Gunakan heading, code block, dan tautan internal."
 									<input
 										type="text"
 										id="post-og-image"
-										placeholder="/blog-placeholder-1.jpg"
+										placeholder="https://... atau /images/og-share.jpg (opsional)"
 										class="input-field"
 									/>
 								</div>
@@ -373,6 +367,8 @@ Gunakan heading, code block, dan tautan internal."
 		</div>
 
 		<script>
+			import EasyMDE from "easymde";
+
 			const titleInput = document.getElementById(
 				"post-title",
 			) as HTMLInputElement | null;
@@ -385,6 +381,9 @@ Gunakan heading, code block, dan tautan internal."
 			const contentInput = document.getElementById(
 				"post-content",
 			) as HTMLTextAreaElement | null;
+			const coverImageInput = document.getElementById(
+				"post-cover-image",
+			) as HTMLInputElement | null;
 			const categorySelect = document.getElementById(
 				"post-category",
 			) as HTMLSelectElement | null;
@@ -411,13 +410,6 @@ Gunakan heading, code block, dan tautan internal."
 				"post-og-image",
 			) as HTMLInputElement | null;
 
-			const tabWrite = document.getElementById("tab-write");
-			const tabPreview = document.getElementById("tab-preview");
-			const writeContainer = document.getElementById("write-container");
-			const previewContainer =
-				document.getElementById("preview-container");
-			const previewContent = document.getElementById("preview-content");
-
 			const autosaveTime = document.getElementById("autosave-time");
 			const btnRestoreDraft =
 				document.getElementById("btn-restore-draft");
@@ -433,6 +425,33 @@ Gunakan heading, code block, dan tautan internal."
 			const chkH1 = document.getElementById("chk-h1");
 			const chkWords = document.getElementById("chk-words");
 			const chkLinks = document.getElementById("chk-links");
+
+			// Inisialisasi EasyMDE Rich Markdown Editor
+			let easyMDE: EasyMDE | null = null;
+			if (contentInput) {
+				easyMDE = new EasyMDE({
+					element: contentInput,
+					spellChecker: false,
+					placeholder: "# Tulis artikel Anda di sini menggunakan Markdown...\n\nGunakan tombol di toolbar atas atau shortcut keyboard (Ctrl+B, Ctrl+I, dll).\nKlik tombol Side-by-side untuk melihat live preview secara langsung di sebelah editor.",
+					toolbar: [
+						"bold", "italic", "strikethrough", "heading", "|",
+						"quote", "code", "unordered-list", "ordered-list", "|",
+						"link", "image", "table", "horizontal-rule", "|",
+						"preview", "side-by-side", "fullscreen", "|",
+						"guide"
+					],
+					status: ["lines", "words", "cursor"],
+					minHeight: "440px",
+					autoDownloadFontAwesome: false,
+				});
+
+				easyMDE.codemirror.on("change", () => {
+					if (contentInput && easyMDE) {
+						contentInput.value = easyMDE.value();
+					}
+					triggerUpdate();
+				});
+			}
 
 			// Toggle scheduled date input
 			if (statusSelect && scheduledGroup) {
@@ -460,71 +479,13 @@ Gunakan heading, code block, dan tautan internal."
 				});
 			}
 
-			if (excerptInput)
-				excerptInput.addEventListener("input", triggerUpdate);
-			if (contentInput)
-				contentInput.addEventListener("input", triggerUpdate);
-			if (keywordInput)
-				keywordInput.addEventListener("input", triggerUpdate);
+			if (excerptInput) excerptInput.addEventListener("input", triggerUpdate);
+			if (keywordInput) keywordInput.addEventListener("input", triggerUpdate);
+			if (coverImageInput) coverImageInput.addEventListener("input", triggerUpdate);
 
 			function triggerUpdate() {
 				updateSeoScore();
 				scheduleAutosave();
-			}
-
-			// Tab switcher (Write vs Live Preview)
-			if (
-				tabWrite &&
-				tabPreview &&
-				writeContainer &&
-				previewContainer &&
-				previewContent
-			) {
-				tabWrite.addEventListener("click", () => {
-					tabWrite.classList.add("active");
-					tabPreview.classList.remove("active");
-					writeContainer.style.display = "block";
-					previewContainer.style.display = "none";
-				});
-
-				tabPreview.addEventListener("click", () => {
-					tabPreview.classList.add("active");
-					tabWrite.classList.remove("active");
-					writeContainer.style.display = "none";
-					previewContainer.style.display = "block";
-					renderPreview();
-				});
-			}
-
-			function renderPreview() {
-				if (!previewContent || !contentInput) return;
-				const raw = contentInput.value;
-				previewContent.innerHTML = parseMarkdownSimple(raw);
-			}
-
-			function parseMarkdownSimple(md: string): string {
-				let html = md
-					.replace(/&/g, "&amp;")
-					.replace(/</g, "&lt;")
-					.replace(/>/g, "&gt;")
-					.replace(/^### (.*$)/gim, "<h3>$1</h3>")
-					.replace(/^## (.*$)/gim, "<h2>$1</h2>")
-					.replace(/^# (.*$)/gim, "<h1>$1</h1>")
-					.replace(/^\> (.*$)/gim, "<blockquote>$1</blockquote>")
-					.replace(/\*\*(.*)\*\*/gim, "<strong>$1</strong>")
-					.replace(/\*(.*)\*/gim, "<em>$1</em>")
-					.replace(
-						/!\[(.*?)\]\((.*?)\)/gim,
-						'<img alt="$1" src="$2" class="preview-img" />',
-					)
-					.replace(
-						/\[(.*?)\]\((.*?)\)/gim,
-						'<a href="$2" target="_blank">$1</a>',
-					)
-					.replace(/`([^`]+)`/gim, "<code>$1</code>")
-					.replace(/\n\n/gim, "</p><p>")
-					.replace(/\n/gim, "<br/>");
-				return `<p>${html}</p>`;
 			}
 
 			// --- Autosave Engine (localStorage) ---
@@ -536,7 +497,8 @@ Gunakan heading, code block, dan tautan internal."
 						title: titleInput?.value || "",
 						slug: slugInput?.value || "",
 						excerpt: excerptInput?.value || "",
-						content: contentInput?.value || "",
+						content: easyMDE ? easyMDE.value() : (contentInput?.value || ""),
+						cover_image: coverImageInput?.value || "",
 						keyword: keywordInput?.value || "",
 						timestamp: Date.now(),
 					};
@@ -569,8 +531,15 @@ Gunakan heading, code block, dan tautan internal."
 							if (slugInput) slugInput.value = parsed.slug || "";
 							if (excerptInput)
 								excerptInput.value = parsed.excerpt || "";
-							if (contentInput)
-								contentInput.value = parsed.content || "";
+							if (coverImageInput)
+								coverImageInput.value = parsed.cover_image || "";
+							if (parsed.content !== undefined) {
+								if (easyMDE) {
+									easyMDE.value(parsed.content || "");
+								} else if (contentInput) {
+									contentInput.value = parsed.content || "";
+								}
+							}
 							if (keywordInput)
 								keywordInput.value = parsed.keyword || "";
 							btnRestoreDraft.style.display = "none";
@@ -585,7 +554,7 @@ Gunakan heading, code block, dan tautan internal."
 				const title = titleInput?.value || "";
 				const slug = slugInput?.value || "";
 				const desc = excerptInput?.value || "";
-				const content = contentInput?.value || "";
+				const content = easyMDE ? easyMDE.value() : (contentInput?.value || "");
 				const kw = (keywordInput?.value || "").trim().toLowerCase();
 
 				let score = 0;
@@ -721,7 +690,7 @@ Gunakan heading, code block, dan tautan internal."
 
 			function updateSmartSuggestions() {
 				if (!suggestionsList || candidatePosts.length === 0) return;
-				const content = (contentInput?.value || "").toLowerCase();
+				const content = (easyMDE ? easyMDE.value() : contentInput?.value || "").toLowerCase();
 				const title = (titleInput?.value || "").toLowerCase();
 				const combined = `${title} ${content}`;
 
@@ -838,8 +807,20 @@ Gunakan heading, code block, dan tautan internal."
 			}
 
 			function insertInternalLink(title: string, slug: string) {
-				if (!contentInput) return;
 				const linkMd = `[${title}](/blog/${slug})`;
+				if (easyMDE) {
+					const cm = easyMDE.codemirror;
+					const selected = cm.getSelection();
+					if (selected) {
+						cm.replaceSelection(`[${selected}](/blog/${slug})`);
+					} else {
+						cm.replaceSelection(linkMd);
+					}
+					cm.focus();
+					triggerUpdate();
+					return;
+				}
+				if (!contentInput) return;
 				const start = contentInput.selectionStart;
 				const end = contentInput.selectionEnd;
 				const text = contentInput.value;
@@ -860,7 +841,7 @@ Gunakan heading, code block, dan tautan internal."
 				}
 
 				contentInput.focus();
-				updateSeoScore();
+				triggerUpdate();
 			}
 
 			// Form submission
@@ -884,7 +865,8 @@ Gunakan heading, code block, dan tautan internal."
 						title: titleInput?.value.trim(),
 						slug: slugInput?.value.trim(),
 						excerpt: excerptInput?.value.trim(),
-						content: contentInput?.value.trim(),
+						content: (easyMDE ? easyMDE.value() : contentInput?.value || "").trim(),
+						cover_image: coverImageInput?.value.trim() || null,
 						category_id: categorySelect?.value,
 						status: statusSelect?.value || "PUBLISHED",
 						scheduled_at: scheduledInput?.value || null,
@@ -1371,5 +1353,235 @@ Gunakan heading, code block, dan tautan internal."
 		.seo-panel {
 			position: static;
 		}
+	}
+
+	.label-desc {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		font-weight: 400;
+		margin-left: 0.25rem;
+	}
+
+	.editor-badge {
+		font-size: 0.75rem;
+		color: #818cf8;
+		background: rgba(99, 102, 241, 0.12);
+		border: 1px solid rgba(99, 102, 241, 0.25);
+		padding: 0.2rem 0.6rem;
+		border-radius: 9999px;
+		font-weight: 500;
+	}
+
+	/* EasyMDE Dark Mode Custom Styling */
+	:global(.EasyMDEContainer) {
+		background: #0d121f;
+		border-radius: 12px;
+		overflow: hidden;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+		transition: border-color 0.2s, box-shadow 0.2s;
+	}
+
+	:global(.EasyMDEContainer:focus-within) {
+		border-color: rgba(99, 102, 241, 0.6);
+		box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15), 0 4px 20px rgba(0, 0, 0, 0.45);
+	}
+
+	:global(.editor-toolbar) {
+		background: #111728 !important;
+		border: none !important;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+		padding: 0.5rem 0.75rem !important;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 2px;
+	}
+
+	:global(.editor-toolbar button) {
+		color: #94a3b8 !important;
+		border-radius: 6px !important;
+		border: 1px solid transparent !important;
+		width: 32px !important;
+		height: 32px !important;
+		display: inline-flex !important;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.15s ease !important;
+	}
+
+	:global(.editor-toolbar button:hover),
+	:global(.editor-toolbar button.active) {
+		background: rgba(99, 102, 241, 0.2) !important;
+		color: #818cf8 !important;
+		border-color: rgba(99, 102, 241, 0.35) !important;
+	}
+
+	:global(.editor-toolbar i.separator) {
+		border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+		border-right: none !important;
+		margin: 0 6px !important;
+		height: 20px !important;
+	}
+
+	:global(.EasyMDEContainer .CodeMirror) {
+		background: #0a0e1a !important;
+		color: #e2e8f0 !important;
+		border: none !important;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
+		font-size: 0.95rem !important;
+		line-height: 1.75 !important;
+		padding: 1rem !important;
+		min-height: 440px !important;
+	}
+
+	:global(.EasyMDEContainer .CodeMirror-cursor) {
+		border-left: 2px solid #818cf8 !important;
+	}
+
+	:global(.EasyMDEContainer .CodeMirror-selected),
+	:global(.EasyMDEContainer .CodeMirror-focused .CodeMirror-selected) {
+		background: rgba(99, 102, 241, 0.3) !important;
+	}
+
+	:global(.cm-s-easymde .cm-header) {
+		color: #60a5fa !important;
+		font-weight: 700 !important;
+	}
+
+	:global(.cm-s-easymde .cm-header-1) {
+		color: #a78bfa !important;
+		font-size: 1.35em !important;
+	}
+
+	:global(.cm-s-easymde .cm-header-2) {
+		color: #818cf8 !important;
+		font-size: 1.2em !important;
+	}
+
+	:global(.cm-s-easymde .cm-header-3) {
+		color: #38bdf8 !important;
+		font-size: 1.1em !important;
+	}
+
+	:global(.cm-s-easymde .cm-quote) {
+		color: #34d399 !important;
+		font-style: italic;
+	}
+
+	:global(.cm-s-easymde .cm-link) {
+		color: #38bdf8 !important;
+	}
+
+	:global(.cm-s-easymde .cm-url) {
+		color: #94a3b8 !important;
+	}
+
+	:global(.cm-s-easymde .cm-comment) {
+		background: rgba(255, 255, 255, 0.05) !important;
+		color: #fbbf24 !important;
+		border-radius: 4px;
+		padding: 1px 4px;
+	}
+
+	:global(.editor-preview),
+	:global(.editor-preview-side) {
+		background: #0a0e1a !important;
+		color: #e2e8f0 !important;
+		border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+		padding: 1.5rem 2rem !important;
+		font-family: inherit !important;
+		line-height: 1.75 !important;
+	}
+
+	:global(.editor-preview h1),
+	:global(.editor-preview-side h1) {
+		color: #f8fafc;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+		padding-bottom: 0.5rem;
+	}
+
+	:global(.editor-preview h2),
+	:global(.editor-preview-side h2) {
+		color: #f1f5f9;
+		margin-top: 1.5rem;
+	}
+
+	:global(.editor-preview code),
+	:global(.editor-preview-side code) {
+		background: #1e293b;
+		color: #f472b6;
+		padding: 0.2rem 0.4rem;
+		border-radius: 4px;
+		font-size: 0.9em;
+	}
+
+	:global(.editor-preview pre),
+	:global(.editor-preview-side pre) {
+		background: #0f172a;
+		padding: 1rem;
+		border-radius: 8px;
+		overflow-x: auto;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+	}
+
+	:global(.editor-preview pre code),
+	:global(.editor-preview-side pre code) {
+		background: transparent;
+		color: #e2e8f0;
+		padding: 0;
+	}
+
+	:global(.editor-preview blockquote),
+	:global(.editor-preview-side blockquote) {
+		border-left: 4px solid #6366f1;
+		padding-left: 1rem;
+		color: #94a3b8;
+		margin: 1rem 0;
+	}
+
+	:global(.editor-preview img),
+	:global(.editor-preview-side img) {
+		max-width: 100%;
+		border-radius: 8px;
+	}
+
+	:global(.editor-preview a),
+	:global(.editor-preview-side a) {
+		color: #60a5fa;
+		text-decoration: underline;
+	}
+
+	:global(.editor-preview table),
+	:global(.editor-preview-side table) {
+		border-collapse: collapse;
+		width: 100%;
+		margin: 1rem 0;
+	}
+
+	:global(.editor-preview th),
+	:global(.editor-preview td),
+	:global(.editor-preview-side th),
+	:global(.editor-preview-side td) {
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		padding: 0.5rem 0.75rem;
+	}
+
+	:global(.editor-preview th),
+	:global(.editor-preview-side th) {
+		background: rgba(255, 255, 255, 0.05);
+		color: #f8fafc;
+	}
+
+	:global(.editor-statusbar) {
+		background: #111728 !important;
+		border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+		color: #64748b !important;
+		padding: 0.4rem 1rem !important;
+		font-size: 0.8rem !important;
+	}
+
+	:global(.editor-statusbar span) {
+		margin-left: 1rem;
 	}
 </style>

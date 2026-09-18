@@ -41,7 +41,7 @@ if (d1Post) {
 		updatedDate: d1Post.updated_at
 			? new Date(d1Post.updated_at)
 			: undefined,
-		heroImage: d1Post.cover_image || "/blog-placeholder-1.jpg",
+		heroImage: d1Post.cover_image || undefined,
 		slug: d1Post.slug || slug,
 	};
 	htmlContent = await marked.parse(d1Post.content || "");
